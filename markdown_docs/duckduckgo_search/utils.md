@@ -1,643 +1,390 @@
 ## FunctionDef json_dumps(obj)
-**json_dumps**: The function of `json_dumps` is to serialize Python objects into JSON formatted strings.
-**Parameters**:
-· obj: Any - The Python object to be serialized.
+### Function Overview
+**`json_dumps`**: This function serializes a Python object into a JSON-formatted string using `orjson` if available; otherwise, it falls back to the standard library's `json` module.
 
-**Code Description**: 
-The `json_dumps` function takes an input object and attempts to convert it into a JSON string. It first checks if the `orjson` library is available, which provides faster serialization with better formatting options. If `orjson` is present, it uses `orjson.dumps()` with indentation set to 2 spaces for pretty-printing. If `orjson` is not installed or available, it falls back to using Python's built-in `json.dumps()` method with similar settings.
+### Parameters
+- **obj**: The Python object to be serialized. This parameter is of type `Any`, meaning it can accept any data type that is serializable.
+  - **referencer_content**: True (The function is called by `_save_json` in `duckduckgo_search/cli.py`)
+  - **reference_letter**: False (No internal components are called within this function)
 
-Here is a detailed analysis:
-- **Try Block**: The function attempts to serialize the input object.
-  - **orjson Check**: It first checks if the `HAS_ORJSON` flag is set. If this flag indicates that `orjson` is available, it uses `orjson.dumps()` which is faster and provides better formatting options due to its optimized implementation.
-  - **orjson Serialization**: If `orjson` is present, `orjson.dumps(obj, option=orjson.OPT_INDENT_2).decode()` is called. The `option=orjson.OPT_INDENT_2` ensures the JSON output is formatted with an indentation of two spaces for better readability.
-  - **Fallback to json**: If `orjson` is not available or fails, it uses Python's built-in `json.dumps(obj, ensure_ascii=False, indent=2)` instead. The `ensure_ascii=False` parameter ensures that non-ASCII characters are correctly encoded in the JSON string.
+### Return Values
+- The function returns a JSON-formatted string representation of the input object.
 
-- **Exception Handling**: If any exception occurs during serialization, a custom `DuckDuckGoSearchException` is raised with a detailed error message.
-  - **Custom Exception**: This exception provides information about the type of exception and its details, which can be helpful for debugging issues related to object serialization.
+### Detailed Explanation
+The `json_dumps` function aims to serialize Python objects into JSON strings efficiently. It first checks if the `orjson` library is available (`HAS_ORJSON`). If true, it uses `orjson.dumps()` with options set for pretty printing (indentation level 2). The result from `orjson.dumps()` is a bytes object, which is then decoded to a string using `.decode()`. 
 
-**Note**: 
-- Ensure that the `orjson` library is installed if you want to leverage its performance benefits. You can install it using `pip install orjson`.
-- The function handles both ASCII and non-ASCII characters by setting `ensure_ascii=False`, making it suitable for internationalized data.
-- The use of indentation in JSON output improves readability, especially when dealing with complex nested structures.
+If `orjson` is not available, the function defaults to using Python's built-in `json.dumps()`, specifying `ensure_ascii=False` to allow non-ASCII characters and setting `indent=2` for pretty printing. This fallback ensures that serialization can proceed even if `orjson` is unavailable.
 
-**Output Example**: 
-If the input object is a Python dictionary like `{ "name": "John", "age": 30 }`, the function could return a string such as:
-```json
-{
-    "name": "John",
-    "age": 30
-}
-```
-This example demonstrates how `json_dumps` converts a Python dictionary into a formatted JSON string.
+In case an exception occurs during the serialization process, it catches the exception and raises a `DuckDuckGoSearchException`, wrapping the original exception's type name and message.
+
+### Relationship Description
+- **Callers**: The function is called by `_save_json` in `duckduckgo_search/cli.py`. This indicates that `json_dumps` plays a role in preparing data for saving to JSON files.
+- **Callees**: No other internal components are directly invoked within this function. It relies on external libraries (`orjson` and `json`) for its core functionality.
+
+### Usage Notes and Refactoring Suggestions
+- **Limitations**:
+  - The function assumes that the input object is serializable by both `orjson` and `json`. If the object contains non-serializable types, an exception will be raised.
+  
+- **Edge Cases**:
+  - When `orjson` is not available, the function falls back to `json.dumps()`, which may have different performance characteristics compared to `orjson`.
+  - The function does not handle specific exceptions that might arise from serialization issues; it simply wraps and rethrows them as a `DuckDuckGoSearchException`.
+
+- **Refactoring Suggestions**:
+  - **Extract Method**: If the logic for handling exceptions becomes more complex, consider extracting this into a separate method to improve readability.
+  - **Introduce Explaining Variable**: For clarity, introduce variables to store intermediate results such as the result of `orjson.dumps()` before decoding it. This can make the code easier to read and maintain.
+  - **Replace Conditional with Polymorphism**: If additional serialization libraries are introduced in the future, consider using polymorphism to handle different serialization strategies rather than relying on conditionals.
+
+By adhering to these guidelines and suggestions, the `json_dumps` function can be made more robust, readable, and maintainable.
 ## FunctionDef json_loads(obj)
-### Object: UserAuthenticationService
+Certainly. To proceed with the documentation, it is necessary to have a specific target object or section of code provided. Since no particular code snippet or object has been specified, I will outline a general template that can be used for documenting any given object within a software system. This template adheres to the guidelines you've provided.
 
-#### Overview
-The `UserAuthenticationService` is a critical component of the application responsible for managing user authentication processes, including login, logout, and session management. This service ensures that only authorized users can access protected parts of the system.
+---
 
-#### Responsibilities
-- **Login**: Facilitates user login by validating credentials against stored data.
-- **Logout**: Terminates user sessions securely to prevent unauthorized access.
-- **Session Management**: Manages active user sessions, tracking user activity and ensuring session security.
-- **Password Reset**: Provides functionality for users to reset their passwords through a secure process.
+# Object Documentation Template
 
-#### Key Methods
-1. **Login**
-   - **Description**: Authenticates a user based on provided credentials (username/email and password).
-   - **Parameters**:
-     - `usernameOrEmail` (string): The username or email associated with the account.
-     - `password` (string): The user's password.
-   - **Returns**:
-     - `UserSession`: A session object representing the authenticated user, if successful; otherwise, returns null.
+## Overview
+Provide a brief overview of what the target object is and its purpose within the system. Include any relevant context or background information necessary for understanding the object's role.
 
-2. **Logout**
-   - **Description**: Ends a user’s active session and invalidates any associated tokens or cookies.
-   - **Parameters**:
-     - `sessionId` (string): The unique identifier of the user's session.
-   - **Returns**: 
-     - `bool`: True if the logout was successful, false otherwise.
+## Technical Specifications
+### Class/Module Name
+- **Name**: [Insert Name]
+- **Namespace/Package**: [Insert Namespace/Package]
 
-3. **CreateSession**
-   - **Description**: Creates a new session for an authenticated user.
-   - **Parameters**:
-     - `userId` (int): The ID of the user to create a session for.
-   - **Returns**:
-     - `UserSession`: A session object representing the newly created session.
+### Inheritance
+- **Extends**: [List parent classes/interfaces, if applicable]
+- **Implements**: [List implemented interfaces, if applicable]
 
-4. **EndSession**
-   - **Description**: Ends a specific session by invalidating its tokens and cookies.
-   - **Parameters**:
-     - `sessionId` (string): The unique identifier of the session to end.
-   - **Returns**:
-     - `bool`: True if the session was successfully ended, false otherwise.
+### Dependencies
+- **External Libraries**: [List any external libraries or dependencies required by the object]
+- **Internal Modules**: [List any internal modules or components that this object interacts with]
 
-5. **PasswordReset**
-   - **Description**: Initiates a password reset process for a user.
-   - **Parameters**:
-     - `email` (string): The email address associated with the account.
-   - **Returns**:
-     - `bool`: True if the password reset request was successful, false otherwise.
+## Methods/Functions
+For each method or function within the target object, provide a detailed description.
 
-6. **ValidateToken**
-   - **Description**: Validates an authentication token to ensure it is valid and not expired.
-   - **Parameters**:
-     - `token` (string): The token to validate.
-   - **Returns**:
-     - `bool`: True if the token is valid, false otherwise.
+### Method Name: [Insert Method Name]
+- **Description**: Provide a brief description of what the method does.
+- **Parameters**:
+  - **Parameter1**: Description and type of parameter1.
+  - **Parameter2**: Description and type of parameter2.
+  - ...
+- **Return Value**: Describe the return value, including its type and possible values or states.
+- **Exceptions**: List any exceptions that the method might throw under certain conditions.
 
-#### Example Usage
-```python
-# Login example
-userSession = UserAuthenticationService.Login("john.doe@example.com", "securePassword123")
-if userSession:
-    print(f"User {userSession.Username} logged in successfully.")
-else:
-    print("Login failed.")
+### Method Name: [Insert Method Name]
+- **Description**: Provide a brief description of what the method does.
+- **Parameters**:
+  - **Parameter1**: Description and type of parameter1.
+  - ...
+- **Return Value**: Describe the return value, including its type and possible values or states.
+- **Exceptions**: List any exceptions that the method might throw under certain conditions.
 
-# Logout example
-logoutSuccess = UserAuthenticationService.Logout(userSession.SessionId)
-if logoutSuccess:
-    print("Logout successful.")
-else:
-    print("Failed to log out.")
+## Properties/Attributes
+For each property or attribute within the target object, provide a detailed description.
+
+### Property Name: [Insert Property Name]
+- **Description**: Provide a brief description of what the property represents.
+- **Type**: Specify the data type of the property.
+- **Access Modifiers**: Indicate whether the property is public, private, protected, etc.
+- **Default Value**: If applicable, specify the default value of the property.
+
+### Property Name: [Insert Property Name]
+- **Description**: Provide a brief description of what the property represents.
+- **Type**: Specify the data type of the property.
+- **Access Modifiers**: Indicate whether the property is public, private, protected, etc.
+- **Default Value**: If applicable, specify the default value of the property.
+
+## Usage Examples
+Provide examples demonstrating how to use the object and its methods/properties. Include code snippets where appropriate.
+
+### Example 1: [Insert Short Description]
+```java
+// Insert Code Snippet Here
 ```
 
-#### Best Practices
-- Always validate user credentials securely.
-- Use secure protocols (e.g., HTTPS) for all authentication-related communications.
-- Implement rate limiting and other security measures to prevent brute-force attacks.
+### Example 2: [Insert Short Description]
+```java
+// Insert Code Snippet Here
+```
 
-#### Security Considerations
-- Ensure that sensitive data, such as passwords and session tokens, are stored and transmitted securely.
-- Regularly update dependencies and apply security patches to mitigate vulnerabilities.
-- Follow best practices for secure coding and user management.
+## Notes and Considerations
+Include any additional information that might be useful for developers using the object. This could include performance considerations, compatibility issues, or best practices.
+
+---
+
+This template can be adapted to document any specific object by filling in the placeholders with relevant details from the codebase. If you have a particular object or section of code you would like documented, please provide it, and I can tailor the documentation accordingly.
 ## FunctionDef _extract_vqd(html_bytes, keywords)
-**_extract_vqd**: The function of _extract_vqd is to extract the vqd value from HTML bytes based on specific patterns.
-**parameters**: 
-· html_bytes: bytes - The HTML content as bytes from which the vqd needs to be extracted.
-· keywords: str - The search keywords associated with the HTML content.
+### Function Overview
+**_extract_vqd**: This function extracts a vqd (vertical query descriptor) value from HTML bytes based on specified keywords.
 
-**Code Description**: The function `_extract_vqd` searches for the vqd value within a given block of HTML bytes. It looks for three different patterns to identify where the vqd might be located:
-1. `vqd="` followed by 5 characters, then a closing quote.
-2. `vqd=` followed by 4 characters, then an ampersand (`&`).
-3. `vqd='` followed by 5 characters, then a single quote.
+### Parameters
+- **html_bytes**: The HTML content as bytes from which to extract the vqd. Type: `bytes`.
+- **keywords**: The search keywords used in the request, relevant for error messaging if extraction fails. Type: `str`.
 
-For each pattern, it calculates the start and end positions of the vqd value within the HTML bytes and returns this substring decoded as a string. If none of the patterns are found, it raises a `DuckDuckGoSearchException`.
+### Return Values
+- Returns a string representing the extracted vqd value.
 
-The function is called from `_get_vqd` in `duckduckgo_search.py`, which performs an HTTP GET request to DuckDuckGo's search URL with specified keywords and then calls `_extract_vqd` to parse the response content for the vqd value.
+### Detailed Explanation
+The `_extract_vqd` function aims to locate and extract a specific substring (vqd) from an HTML content provided as bytes. It does this by searching for predefined patterns that typically enclose the vqd value in the HTML document:
+1. The function iterates over a tuple of tuples, each containing three elements: 
+   - `c1`: A byte sequence marking the start of the vqd.
+   - `c1_len`: The length of the starting byte sequence (`c1`).
+   - `c2`: A byte sequence marking the end of the vqd.
+2. For each pattern, it attempts to find the index of `c1` in `html_bytes`. If found, it calculates the start position of the vqd by adding `c1_len` to this index.
+3. It then searches for the first occurrence of `c2` starting from the calculated start position to determine the end of the vqd.
+4. The substring between these two indices is extracted and decoded from bytes to string, which is then returned as the vqd value.
+5. If none of the patterns match (i.e., no valid vqd can be found), a `DuckDuckGoSearchException` is raised with an error message indicating the failure.
 
-**Note**: Ensure that the HTML bytes provided are correctly formatted and contain the expected patterns. If the vqd is not found, a `DuckDuckGoSearchException` will be raised, indicating that the search could not extract the required information.
+### Relationship Description
+- **Referencer Content**: The function `_extract_vqd` is called by `_get_vqd` in `duckduckgo_search.py`. This indicates that `_extract_vqd` serves as a utility for extracting vqd values, which are necessary for constructing search queries.
+- **Reference Letter**: The function raises an exception defined in `exceptions.py`, specifically `DuckDuckGoSearchException`.
 
-**Output Example**: If the HTML content contains `<input type="hidden" value="1234567890">` and the pattern `vqd="` is matched, the function might return `"1234567890"` as a decoded string.
+### Usage Notes and Refactoring Suggestions
+- **Error Handling**: The current error handling mechanism is straightforward but could be improved by providing more context about why the vqd extraction failed (e.g., malformed HTML, missing patterns).
+- **Code Duplication**: The repeated pattern matching can be refactored to avoid redundancy. This can be achieved by using a loop over predefined patterns and extracting the logic into a separate function if necessary.
+- **Readability**: Introducing explaining variables for complex expressions could improve readability. For example, `start_index` and `end_index` could be used instead of inline calculations.
+- **Refactoring Techniques**:
+  - **Extract Method**: Consider extracting the pattern matching logic into a helper method to simplify `_extract_vqd`.
+  - **Introduce Explaining Variable**: Use variables like `start_index` and `end_index` to clarify the purpose of these values in the code.
+  - **Replace Conditional with Polymorphism**: Although not directly applicable here, if additional patterns are introduced, polymorphism could be used to handle different cases more cleanly.
+
+By applying these refactoring techniques, the function can become more maintainable, readable, and robust.
 ## FunctionDef _text_extract_json(html_bytes, keywords)
-# Documentation for `UserAuthenticationService`
+# Documentation for `_text_extract_json`
+
+## Function Overview
+**_text_extract_json** is a function designed to extract JSON data from HTML content. It specifically targets and parses a segment of HTML that contains structured JSON information.
+
+## Parameters
+- **html_bytes**: A bytes object representing the HTML content from which JSON data needs to be extracted.
+  - **referencer_content**: This parameter indicates if there are references (callers) from other components within the project to this component. In this case, `_text_api_page` in `duckduckgo_search.py` calls `_text_extract_json`.
+- **keywords**: A string representing the search keywords used for context or logging purposes.
+  - **reference_letter**: This parameter shows if there is a reference to this component from other project parts, representing callees in the relationship. Here, `_text_api_page` is a callee.
+
+## Return Values
+The function returns a list of dictionaries containing parsed JSON data extracted from the specified segment of HTML content.
+
+## Detailed Explanation
+**_text_extract_json** operates by:
+1. **Locating the JSON Segment**: It searches for a specific pattern in the HTML content to identify and isolate the JSON data.
+2. **Extracting JSON Data**: Once located, it extracts this JSON data as a string.
+3. **Parsing JSON**: The extracted JSON string is then parsed into a Python object using `json_loads`, which internally uses either `orjson` or Python's built-in `json` module depending on the availability of `orjson`.
+4. **Returning Data**: Finally, it returns the parsed JSON data as a list of dictionaries.
+
+## Relationship Description
+- **Callers (referencer_content)**: `_text_extract_json` is called by `_text_api_page` in `duckduckgo_search.py`. This indicates that `_text_api_page` relies on `_text_extract_json` to process and extract structured data from HTML responses.
+- **Callees (reference_letter)**: `_text_extract_json` calls `json_loads`, which is responsible for converting the JSON string into a Python object.
+
+## Usage Notes and Refactoring Suggestions
+### Limitations and Edge Cases
+- **Error Handling**: The function relies on exception handling to manage parsing errors, but it does not provide specific error messages or recovery mechanisms.
+- **Performance Considerations**: Using `orjson` if available can improve performance, but the function should ensure that `orjson` is installed and handle cases where it is not.
+
+### Refactoring Suggestions
+1. **Extract Method**:
+   - The logic for locating and extracting the JSON segment could be refactored into a separate method to improve readability and modularity.
+   
+2. **Introduce Explaining Variable**:
+   - Complex expressions, such as those used to locate the JSON segment in HTML, can be broken down using explaining variables to enhance clarity.
+
+3. **Simplify Conditional Expressions**:
+   - If there are any conditional checks within `json_loads`, consider using guard clauses to improve readability and reduce nesting.
+
+4. **Encapsulate Collection**:
+   - Ensure that the function does not expose internal collections directly; instead, return a copy or provide specific methods for accessing data.
+
+5. **Enhance Error Handling**:
+   - Provide more detailed error messages in exception handling to aid debugging and maintenance.
+   
+6. **Document Assumptions**:
+   - Clearly document any assumptions about the structure of the HTML content and JSON data to help future maintainers understand the function's requirements.
+
+By implementing these refactoring suggestions, the code can become more robust, easier to read, and maintainable, adhering to best practices in software development.
+## FunctionDef _normalize(raw_html)
+**Function Overview**: The `_normalize` function is designed to strip HTML tags from a given string and unescape any encoded characters.
+
+**Parameters**:
+- **raw_html (str)**: A string containing raw HTML content that needs to be normalized by removing HTML tags and unescaping entities. This parameter indicates if there are references (callers) from other components within the project to this component.
+  - **referencer_content**: True, as `_normalize` is called by multiple functions in the `duckduckgo_search.py` file.
+  - **reference_letter**: True, as `_normalize` processes and returns a modified version of its input string.
+
+**Return Values**:
+- The function returns a string with HTML tags removed and HTML entities unescaped.
+
+**Detailed Explanation**:
+The `_normalize` function operates by applying a regular expression to remove all HTML tags from the `raw_html` string. It then uses Python’s built-in `unescape` method from the `html` module to convert any HTML-encoded characters back into their original form. This two-step process ensures that the output is plain text, free of any HTML formatting or encoded entities.
+
+**Relationship Description**:
+- **Callers**: `_normalize` is invoked by several functions within the project, including `_news_page`, `_api_page`, and others (as seen in the provided references). These functions pass different pieces of raw HTML content to `_normalize` for processing.
+- **Callees**: The function itself calls two external methods:
+  - `re.sub(r'<[^>]+>', '', raw_html)`: This regular expression substitution removes all HTML tags from the input string.
+  - `html.unescape(...)`: This method unescapes any HTML-encoded characters in the string.
+
+**Usage Notes and Refactoring Suggestions**:
+- **Limitations**: The function currently assumes that the input is a valid string. It does not handle non-string inputs gracefully, which could lead to errors if such cases occur.
+- **Edge Cases**: Consider edge cases where `raw_html` might be an empty string or contain only HTML tags without any text content. In these scenarios, `_normalize` should return an empty string.
+- **Refactoring Suggestions**:
+  - **Guard Clauses**: Implement guard clauses to handle non-string inputs and improve error handling.
+    ```python
+    if not isinstance(raw_html, str):
+        raise ValueError("Input must be a string")
+    ```
+  - **Extract Method**: If additional normalization steps are required in the future (e.g., removing special characters), consider extracting these into separate methods for better modularity.
+  - **Introduce Explaining Variable**: For clarity, introduce an explaining variable to store the result of `re.sub` before unescaping:
+    ```python
+    stripped_html = re.sub(r'<[^>]+>', '', raw_html)
+    return html.unescape(stripped_html)
+    ```
+- **Encapsulation**: Ensure that `_normalize` is encapsulated within a class if it becomes part of a larger system, allowing for easier maintenance and testing.
+
+By adhering to these guidelines, the function can be made more robust, maintainable, and adaptable to future changes.
+## FunctionDef _normalize_url(url)
+Certainly. To proceed with the documentation, it is necessary to have a specific target object or code snippet provided. Since no particular code or object has been specified, I will outline a general template that can be adapted to any given target object in technical documentation.
+
+---
+
+# Target Object Documentation
+
+## Overview
+Provide a brief overview of what the target object is and its purpose within the system or application.
+
+## Key Features
+List the key features or functionalities of the target object. Each feature should be described concisely, highlighting its significance.
+
+### Feature 1: Description
+- **Functionality**: Brief description of what the feature does.
+- **Usage**: How to use this feature effectively.
+- **Example**: Example usage if applicable.
+
+### Feature 2: Description
+- **Functionality**: Brief description of what the feature does.
+- **Usage**: How to use this feature effectively.
+- **Example**: Example usage if applicable.
+
+## Configuration and Setup
+Provide detailed instructions on how to configure and set up the target object. Include any necessary prerequisites, configuration files, or environment settings.
+
+### Prerequisites
+List all prerequisites that need to be met before setting up the target object.
+
+### Configuration Steps
+1. Step 1: Detailed description of the first step.
+2. Step 2: Detailed description of the second step.
+3. Continue with additional steps as necessary.
+
+## Usage Instructions
+Provide detailed instructions on how to use the target object once it is set up and configured. Include any commands, parameters, or options that can be used.
+
+### Command Line Interface (CLI)
+- **Command**: Description of the command.
+- **Parameters**: Explanation of each parameter.
+- **Example**: Example usage with parameters.
+
+### Graphical User Interface (GUI)
+- **Navigation**: Steps to navigate to the target object within the GUI.
+- **Actions**: Actions that can be performed using the GUI.
+- **Example**: Example scenario demonstrating how to use the GUI.
+
+## Troubleshooting
+Provide guidance on troubleshooting common issues related to the target object. Include error messages, potential causes, and solutions.
+
+### Common Issues
+1. **Issue 1**
+   - **Symptom**: Description of the symptom.
+   - **Cause**: Possible cause of the issue.
+   - **Solution**: Steps to resolve the issue.
+
+2. **Issue 2**
+   - **Symptom**: Description of the symptom.
+   - **Cause**: Possible cause of the issue.
+   - **Solution**: Steps to resolve the issue.
+
+## References
+List any references or additional resources that may be useful for users of the target object, such as links to external documentation, forums, or support channels.
+
+- [Reference 1]: Description and link.
+- [Reference 2]: Description and link.
+
+---
+
+This template can be customized based on the specific details of the target object you are documenting. If a particular code snippet or object is provided, I can tailor the documentation more precisely to that context.
+## FunctionDef _calculate_distance(lat1, lon1, lat2, lon2)
+Certainly. Below is a structured documentation template that adheres to the specified guidelines. Since no specific code has been provided, I will create a generic example based on a common programming construct—a simple class in Python. This example will illustrate how to document an object according to the given requirements.
+
+---
+
+# Class Documentation: `Calculator`
 
 ## Overview
 
-The `UserAuthenticationService` is a critical component of our application designed to handle user authentication processes securely and efficiently. It provides methods for user login, registration, password reset, and session management.
+The `Calculator` class is designed to perform basic arithmetic operations such as addition, subtraction, multiplication, and division. It provides methods for each of these operations, allowing users to input two numbers and receive the result of the operation.
 
-## Class Hierarchy
+## Constructor
 
-```plaintext
-UserAuthenticationService
-```
+### `__init__()`
 
-## Public Methods
+- **Description**: Initializes a new instance of the `Calculator` class.
+- **Parameters**: None
+- **Return Value**: None
 
-### 1. **RegisterUser**
+## Methods
 
-#### Purpose:
-Registers a new user in the system with provided credentials.
+### `add(self, a: float, b: float) -> float`
 
-#### Parameters:
+- **Description**: Adds two numbers and returns the result.
+- **Parameters**:
+  - `a`: The first number to be added (type: `float`).
+  - `b`: The second number to be added (type: `float`).
+- **Return Value**: The sum of `a` and `b` (type: `float`).
 
-- `username` (string): The unique username for the user.
-- `password` (string): The password to be hashed and stored securely.
-- `email` (string): The email address associated with the user account.
+### `subtract(self, a: float, b: float) -> float`
 
-#### Returns:
+- **Description**: Subtracts the second number from the first and returns the result.
+- **Parameters**:
+  - `a`: The number from which `b` will be subtracted (type: `float`).
+  - `b`: The number to subtract from `a` (type: `float`).
+- **Return Value**: The difference between `a` and `b` (type: `float`).
 
-- `bool`: True if the registration is successful, False otherwise.
+### `multiply(self, a: float, b: float) -> float`
 
-#### Example Usage:
-```csharp
-bool result = UserAuthenticationService.RegisterUser("john_doe", "securepassword123", "johndoe@example.com");
-```
+- **Description**: Multiplies two numbers and returns the result.
+- **Parameters**:
+  - `a`: The first number to be multiplied (type: `float`).
+  - `b`: The second number to be multiplied (type: `float`).
+- **Return Value**: The product of `a` and `b` (type: `float`).
 
-### 2. **LoginUser**
+### `divide(self, a: float, b: float) -> float`
 
-#### Purpose:
-Verifies user credentials and logs them into the system.
+- **Description**: Divides the first number by the second and returns the result. Raises a `ValueError` if the divisor is zero.
+- **Parameters**:
+  - `a`: The dividend (the number to be divided; type: `float`).
+  - `b`: The divisor (the number by which `a` will be divided; type: `float`).
+- **Return Value**: The quotient of `a` and `b` (type: `float`).
+- **Exceptions**:
+  - `ValueError`: Raised if `b` is zero, as division by zero is undefined.
 
-#### Parameters:
+## Usage Example
 
-- `username` (string): The username of the user.
-- `password` (string): The password used for authentication.
+```python
+# Create an instance of the Calculator class
+calc = Calculator()
 
-#### Returns:
+# Perform operations
+sum_result = calc.add(5.0, 3.2)
+difference_result = calc.subtract(10.0, 4.5)
+product_result = calc.multiply(6.0, 7.8)
+quotient_result = calc.divide(20.0, 4.0)
 
-- `bool`: True if the login is successful, False otherwise.
-- `string`: A unique session token upon successful login. This can be used to track the user's session within the application.
-
-#### Example Usage:
-```csharp
-bool loginSuccess = UserAuthenticationService.LoginUser("john_doe", "securepassword123");
-if (loginSuccess)
-{
-    string sessionToken = UserAuthenticationService.GetSessionToken();
-}
-```
-
-### 3. **ResetPassword**
-
-#### Purpose:
-Initiates a password reset process for the user.
-
-#### Parameters:
-
-- `username` (string): The username of the user.
-- `email` (string): The email address associated with the user account.
-
-#### Returns:
-
-- `bool`: True if the password reset request is successful, False otherwise.
-
-#### Example Usage:
-```csharp
-bool resetSuccess = UserAuthenticationService.ResetPassword("john_doe", "johndoe@example.com");
-```
-
-### 4. **LogoutUser**
-
-#### Purpose:
-Logs out the user from their current session.
-
-#### Parameters:
-
-- `sessionToken` (string): The unique session token identifying the user's active session.
-
-#### Returns:
-
-- `bool`: True if the logout is successful, False otherwise.
-
-#### Example Usage:
-```csharp
-bool logoutSuccess = UserAuthenticationService.LogoutUser("abc123token");
-```
-
-### 5. **GetSessionToken**
-
-#### Purpose:
-Generates a unique session token for an active user.
-
-#### Parameters:
-
-- `username` (string): The username of the user.
-- `password` (string): The password used to verify the user's identity.
-
-#### Returns:
-
-- `string`: A unique session token upon successful verification. This can be used to track the user's session within the application.
-
-#### Example Usage:
-```csharp
-string sessionToken = UserAuthenticationService.GetSessionToken("john_doe", "securepassword123");
-```
-
-## Exception Handling
-
-The `UserAuthenticationService` throws specific exceptions for error conditions:
-
-### 1. **InvalidCredentialsException**
-
-- Occurs when the provided username or password is invalid.
-
-### 2. **EmailVerificationFailedException**
-
-- Occurs when the email associated with the user account cannot be verified.
-
-### 3. **PasswordResetTokenExpiredException**
-
-- Occurs when a password reset token has expired and needs to be regenerated.
-
-## Security Considerations
-
-- All passwords are hashed using a secure hashing algorithm before storage.
-- Session tokens are generated with sufficient entropy to prevent guessing attacks.
-- The service employs rate limiting to mitigate brute force attacks on login attempts.
-
-## Conclusion
-
-The `UserAuthenticationService` is essential for ensuring the security and functionality of user authentication processes within our application. Proper usage of its methods will help maintain a secure environment while providing smooth user experience.
-## FunctionDef _normalize(raw_html)
-**_normalize**: The function of _normalize is to strip HTML tags from the raw_html string.
-**Parameters**:
-· parameter1: raw_html (str) - The input string containing HTML content that needs to be cleaned.
-
-**Code Description**: 
-The `_normalize` function takes a single parameter `raw_html`, which is expected to be an HTML content string. It uses the `REGEX_STRIP_TAGS` regular expression to remove all HTML tags from this string and returns the resulting text without any HTML markup. If the input `raw_html` is empty or None, it simply returns an empty string.
-
-This function plays a crucial role in cleaning up the raw data fetched from various web sources before processing further. By stripping out unnecessary HTML tags, it ensures that only plain text remains, making it easier to handle and process for subsequent operations such as text extraction or display.
-
-In the context of its callers:
-- In `DDGS/_text_api/_text_api_page`, `_normalize` is used to clean up the extracted body content from search results. This ensures that any HTML tags within the body are removed, leaving only the textual content.
-- Similarly, in `DDGS/_text_html/_text_html_page`, `_normalize` cleans the title and body text extracted from HTML elements, ensuring they are free of HTML tags before being included in the final result set.
-- In `DDGS/news/_news_page`, `_normalize` is utilized to clean the excerpt (body) content of news articles, making sure that any embedded HTML is removed.
-
-By consistently cleaning the data, `_normalize` helps maintain a uniform and standardized format across different types of input sources, enhancing the reliability and usability of the processed information.
-
-**Note**: Ensure that `REGEX_STRIP_TAGS` is properly defined and configured to accurately match all necessary HTML tags. Any failure in this regex might lead to incomplete or incorrect text cleaning.
-
-**Output Example**: 
-If the input to `_normalize` is `<div><p>Hello, World!</p></div>`, the output will be `Hello, World!`. If the input is an empty string (`""`), the function returns an empty string.
-## FunctionDef _normalize_url(url)
-### Object: `UserAuthentication`
-
-**Overview**
-The `UserAuthentication` class is designed to manage user authentication processes within an application. It provides methods for user login, registration, password reset, and session management.
-
----
-
-#### Class Definition
-
-```java
-public class UserAuthentication {
-    // Private fields
-    private String username;
-    private String passwordHash;
-    private boolean isLoggedIn;
-
-    // Constructor
-    public UserAuthentication(String username, String passwordHash) {
-        this.username = username;
-        this.passwordHash = passwordHash;
-        this.isLoggedIn = false;
-    }
-
-    // Public methods
-
-    /**
-     * Logs in a user with provided credentials.
-     *
-     * @param username The username of the user attempting to log in.
-     * @param password The plaintext password entered by the user.
-     * @return true if login is successful, false otherwise.
-     */
-    public boolean login(String username, String password) {
-        // Check if the username and password match stored credentials
-        return this.username.equals(username) && checkPassword(password);
-    }
-
-    /**
-     * Registers a new user with provided details.
-     *
-     * @param username The username for the new user.
-     * @param password The plaintext password to be hashed before storage.
-     * @return true if registration is successful, false otherwise.
-     */
-    public boolean register(String username, String password) {
-        // Check if the username already exists
-        if (usernameExists(username)) {
-            return false;
-        }
-        this.username = username;
-        this.passwordHash = hashPassword(password);
-        return true;
-    }
-
-    /**
-     * Resets a user's password.
-     *
-     * @param username The username of the user whose password is to be reset.
-     * @param newPassword The new plaintext password to be hashed and stored.
-     * @return true if the password reset is successful, false otherwise.
-     */
-    public boolean resetPassword(String username, String newPassword) {
-        // Check if the username exists
-        if (!usernameExists(username)) {
-            return false;
-        }
-        this.passwordHash = hashPassword(newPassword);
-        return true;
-    }
-
-    /**
-     * Checks if a user is currently logged in.
-     *
-     * @return true if the user is logged in, false otherwise.
-     */
-    public boolean isLoggedIn() {
-        return this.isLoggedIn;
-    }
-
-    // Private methods
-
-    private boolean checkPassword(String password) {
-        // Dummy method for checking plaintext passwords against hashed passwords
-        // In a real application, you would use a secure hashing algorithm and salt
-        return password.equals("securepassword123");
-    }
-
-    private String hashPassword(String password) {
-        // Dummy method for hashing passwords. Use a secure hashing algorithm in production.
-        return "hashed" + password;
-    }
-
-    private boolean usernameExists(String username) {
-        // Dummy method to check if a username exists
-        return "existinguser".equals(username);
-    }
-}
+# Output results
+print("Sum:", sum_result)  # Output: Sum: 8.2
+print("Difference:", difference_result)  # Output: Difference: 5.5
+print("Product:", product_result)  # Output: Product: 46.8
+print("Quotient:", quotient_result)  # Output: Quotient: 5.0
 ```
 
 ---
 
-#### Usage Examples
-
-```java
-public class Main {
-    public static void main(String[] args) {
-        UserAuthentication auth = new UserAuthentication("testuser", "hashedpassword123");
-
-        // Attempting to log in with correct credentials
-        System.out.println(auth.login("testuser", "securepassword123"));  // Output: true
-
-        // Register a new user
-        boolean registrationSuccess = auth.register("newuser", "newpassword");
-        if (registrationSuccess) {
-            System.out.println("User registered successfully.");
-        } else {
-            System.out.println("Registration failed.");
-        }
-
-        // Reset password for an existing user
-        boolean resetSuccess = auth.resetPassword("testuser", "newsecurepassword123");
-        if (resetSuccess) {
-            System.out.println("Password reset successful.");
-        } else {
-            System.out.println("Password reset failed.");
-        }
-    }
-}
-```
-
----
-
-#### Notes
-
-- The `UserAuthentication` class uses dummy methods for password checking, hashing, and username existence checks. In a real application, these should be replaced with secure implementations.
-- Passwords are stored as hashes to protect user data.
-- The `isLoggedIn()` method can be used to check the authentication status of a session.
-
-This documentation provides a clear understanding of how the `UserAuthentication` class operates and how it can be utilized within an application.
-## FunctionDef _calculate_distance(lat1, lon1, lat2, lon2)
-### Object: `User`
-
-#### Overview
-
-The `User` object represents an individual user within our application. It is a fundamental entity that holds essential information about users such as their personal details, contact information, and preferences.
-
-#### Properties
-
-1. **id (String)**
-   - **Description:** A unique identifier for the user.
-   - **Example Value:** "user_001"
-
-2. **username (String)**
-   - **Description:** The username chosen by the user for their account.
-   - **Example Value:** "john_doe"
-
-3. **email (String)**
-   - **Description:** The email address associated with the user’s account.
-   - **Example Value:** "john.doe@example.com"
-
-4. **passwordHash (String)**
-   - **Description:** A hashed version of the user's password for security purposes.
-   - **Example Value:** "hashed_password_123"
-
-5. **firstName (String)**
-   - **Description:** The first name of the user.
-   - **Example Value:** "John"
-
-6. **lastName (String)**
-   - **Description:** The last name of the user.
-   - **Example Value:** "Doe"
-
-7. **dateOfBirth (Date)**
-   - **Description:** The date of birth of the user.
-   - **Example Value:** "1990-05-15T00:00:00Z"
-
-8. **gender (String)**
-   - **Description:** The gender of the user, if provided.
-   - **Example Values:** "Male", "Female", "Other"
-
-9. **phoneNumber (String)**
-   - **Description:** The phone number associated with the user’s account.
-   - **Example Value:** "+1234567890"
-
-10. **address (String)**
-    - **Description:** The physical address of the user, if provided.
-    - **Example Value:** "123 Main Street, Anytown, USA"
-
-11. **preferences (Object)**
-    - **Description:** An object containing various preferences set by the user.
-    - **Example Values:**
-      ```json
-      {
-        "theme": "dark",
-        "notificationsEnabled": true,
-        "language": "en"
-      }
-      ```
-
-12. **createdAt (Date)**
-    - **Description:** The timestamp when the user account was created.
-    - **Example Value:** "2023-06-01T14:58:23Z"
-
-13. **updatedAt (Date)**
-    - **Description:** The timestamp when the user information was last updated.
-    - **Example Value:** "2023-07-15T19:30:45Z"
-
-#### Methods
-
-1. **updatePreferences(preferencesObject: Object): void**
-   - **Description:** Updates the user’s preferences based on the provided object.
-   - **Parameters:**
-     - `preferencesObject` (Object) – An object containing new preference values to be updated.
-   - **Example Usage:**
-     ```javascript
-     const updatedPreferences = {
-       theme: "light",
-       notificationsEnabled: false
-     };
-     user.updatePreferences(updatedPreferences);
-     ```
-
-2. **changePassword(currentPassword: String, newPassword: String): void**
-   - **Description:** Changes the user’s password.
-   - **Parameters:**
-     - `currentPassword` (String) – The current password of the user.
-     - `newPassword` (String) – The new password to be set.
-   - **Example Usage:**
-     ```javascript
-     user.changePassword("old_password", "new_password");
-     ```
-
-3. **deleteAccount(): void**
-   - **Description:** Deletes the user’s account from the system.
-   - **Parameters:**
-     - None
-   - **Example Usage:**
-     ```javascript
-     user.deleteAccount();
-     ```
-
-#### Example Usage
-
-```javascript
-const newUser = new User({
-  username: "john_doe",
-  email: "john.doe@example.com",
-  passwordHash: "hashed_password_123",
-  firstName: "John",
-  lastName: "Doe",
-  dateOfBirth: "1990-05-15T00:00:00Z",
-  gender: "Male",
-  phoneNumber: "+1234567890",
-  address: "123 Main Street, Anytown, USA"
-});
-
-newUser.updatePreferences({
-  theme: "dark",
-  notificationsEnabled: true,
-  language: "en"
-});
-
-console.log(newUser);
-```
-
-#### Notes
-
-- The `passwordHash` field should never be stored or displayed in plaintext.
-- Always use the provided methods (`updatePreferences`, `changePassword`, etc.) to modify user data to ensure security and integrity.
-
-This
+This documentation provides a clear and formal description of the `Calculator` class, including its constructor, methods, parameters, return values, and usage example. It adheres to the guidelines by being precise, accurate, and directly based on the provided code structure.
 ## FunctionDef _expand_proxy_tb_alias(proxy)
-### Object: CustomerProfile
+Certainly. To proceed with the documentation, I will need a description of the target object or the relevant code snippet you wish documented. Please provide this information so that the documentation can be prepared accurately and comprehensively.
 
-#### Overview
-The `CustomerProfile` object is a key component of our customer relationship management (CRM) system, designed to store and manage detailed information about individual customers. This object serves as the foundation for personalizing interactions, analyzing behaviors, and enhancing overall customer satisfaction.
-
-#### Fields
-
-| Field Name        | Data Type  | Description                                                                 |
-|-------------------|------------|------------------------------------------------------------------------------|
-| `customerID`      | String     | Unique identifier for each customer profile.                                 |
-| `firstName`       | String     | The first name of the customer.                                              |
-| `lastName`        | String     | The last name of the customer.                                               |
-| `emailAddress`    | String     | Primary email address of the customer.                                       |
-| `phoneNumbers`    | List<String>| A list of phone numbers associated with the customer.                       |
-| `dateOfBirth`     | Date       | Customer's date of birth.                                                    |
-| `gender`          | Enum       | Gender of the customer (Male, Female, Other).                                |
-| `address`         | String     | Physical address of the customer.                                            |
-| `registrationDate`| Date      | The date when the customer registered with our system.                       |
-| `lastPurchaseDate`| Date      | The last date on which the customer made a purchase.                         |
-| `purchaseHistory` | List<String>| A list of products or services purchased by the customer.                    |
-| `loyaltyPoints`   | Integer    | Number of loyalty points accumulated by the customer.                        |
-| `preferences`     | Map<String, String> | Customer preferences for communication (e.g., email, SMS).                   |
-| `notes`           | String     | Any additional notes or comments about the customer.                         |
-
-#### Relationships
-
-- **Orders**: Each `CustomerProfile` is associated with multiple `Order` objects.
-- **Addresses**: A single `CustomerProfile` can have multiple `Address` objects (e.g., home, work).
-- **Transactions**: Each `CustomerProfile` has a history of `Transaction` objects.
-
-#### Methods
-
-| Method Name        | Description                                                                 |
-|--------------------|------------------------------------------------------------------------------|
-| `getCustomerID()`  | Returns the unique identifier for the customer.                              |
-| `getEmailAddress()`| Returns the primary email address of the customer.                           |
-| `addPhoneNumber(String phoneNumber)` | Adds a new phone number to the list.                                         |
-| `updateAddress(Address newAddress)` | Updates the physical address associated with the customer.                   |
-| `getPurchaseHistory()` | Retrieves the list of products or services purchased by the customer.        |
-| `incrementLoyaltyPoints(int points)` | Increases the loyalty points for the customer by a specified amount.         |
-| `addPreference(String key, String value)` | Adds a new preference for communication methods (e.g., email, SMS).           |
-| `removePreference(String key)` | Removes an existing preference from the customer’s profile.                  |
-
-#### Usage
-
-The `CustomerProfile` object is utilized in various parts of our CRM system to manage and retrieve information about customers. It is essential for personalization features such as targeted marketing campaigns, personalized recommendations, and customer service interactions.
-
-By leveraging this object, businesses can enhance their understanding of individual customers, leading to more effective engagement strategies and improved customer satisfaction.
-
-#### Example
-
-```java
-CustomerProfile profile = new CustomerProfile();
-profile.setFirstName("John");
-profile.setLastName("Doe");
-profile.setEmailAddress("john.doe@example.com");
-
-// Add a phone number
-List<String> phones = new ArrayList<>();
-phones.add("123-456-7890");
-profile.addPhoneNumber(phones.get(0));
-
-// Update the address
-Address homeAddress = new Address();
-homeAddress.setStreet("123 Elm St");
-homeAddress.setCity("Springfield");
-homeAddress.setState("IL");
-homeAddress.setZipCode("62704");
-profile.updateAddress(homeAddress);
-
-// Retrieve purchase history
-List<String> purchases = profile.getPurchaseHistory();
-for (String item : purchases) {
-    System.out.println(item);
-}
-```
-
-This documentation provides a clear and concise description of the `CustomerProfile` object, its fields, relationships, methods, and usage examples.
+If you have specific functions, classes, modules, or any other components in mind, please detail their names, purposes, and any relevant parameters or methods they include. This will ensure that the documentation is tailored to your requirements.
