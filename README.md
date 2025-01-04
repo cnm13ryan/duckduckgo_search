@@ -1,38 +1,27 @@
 ![Python >= 3.8](https://img.shields.io/badge/python->=3.8-red.svg) [![](https://badgen.net/github/release/deedy5/duckduckgo_search)](https://github.com/deedy5/duckduckgo_search/releases) [![](https://badge.fury.io/py/duckduckgo-search.svg)](https://pypi.org/project/duckduckgo-search) [![Downloads](https://static.pepy.tech/badge/duckduckgo-search)](https://pepy.tech/project/duckduckgo-search) [![Downloads](https://static.pepy.tech/badge/duckduckgo-search/week)](https://pepy.tech/project/duckduckgo-search)
 # Duckduckgo_search<a name="TOP"></a>
 
-Search for words, documents, images, videos, news, maps and text translation using the DuckDuckGo.com search engine. Downloading files and images to a local hard drive.
+AI chat and search for text, news, images and videos using the DuckDuckGo.com search engine.
 
 ## Table of Contents
 * [Install](#install)
 * [CLI version](#cli-version)
 * [Duckduckgo search operators](#duckduckgo-search-operators)
 * [Regions](#regions)
-* [DDGS and AsyncDDGS classes](#ddgs-and-asyncddgs-classes)
+* [DDGS class](#ddgs-class)
 * [Proxy](#proxy)
 * [Exceptions](#exceptions)
 * [1. chat() - AI chat](#1-chat---ai-chat)
 * [2. text() - text search](#2-text---text-search-by-duckduckgocom)
-* [3. answers() - instant answers](#3-answers---instant-answers-by-duckduckgocom)
-* [4. images() - image search](#4-images---image-search-by-duckduckgocom)
-* [5. videos() - video search](#5-videos---video-search-by-duckduckgocom)
-* [6. news() - news search](#6-news---news-search-by-duckduckgocom)
-* [7. maps() - map search](#7-maps---map-search-by-duckduckgocom)
-* [8. translate() - translation](#8-translate---translation-by-duckduckgocom)
-* [9. suggestions() - suggestions](#9-suggestions---suggestions-by-duckduckgocom)
+* [3. images() - image search](#3-images---image-search-by-duckduckgocom)
+* [4. videos() - video search](#4-videos---video-search-by-duckduckgocom)
+* [5. news() - news search](#5-news---news-search-by-duckduckgocom)
 * [Disclaimer](#disclaimer)
 
 ## Install
 ```python
 pip install -U duckduckgo_search
 ```
-There is also a beta release that uses the `httpx` library:
-```python
-pip install -U duckduckgo_search==6.2.11b1
-```
-> [!NOTE]
-> you can install lxml to use the `text` function with `backend='html'` or `backend='lite'` (size ≈ 12Mb)</br>
-> `pip install -U duckduckgo_search[lxml]`
 
 ## CLI version
 
@@ -44,13 +33,13 @@ CLI examples:
 # AI chat
 ddgs chat
 # text search
-ddgs text -k "standard oil"
+ddgs text -k "Assyrian siege of Jerusalem"
 # find and download pdf files via proxy
-ddgs text -k "pushkin filetype:pdf" -r wt-wt -m 50 -d -p https://1.2.3.4:1234
+ddgs text -k "Economics in one lesson filetype:pdf" -r wt-wt -m 50 -p https://1.2.3.4:1234 -d -dd economics_reading
 # using Tor Browser as a proxy (`tb` is an alias for `socks5://127.0.0.1:9150`)
-ddgs text -k "'to kill a mockingbird' filetype:doc" -m 50 -d -p tb
+ddgs text -k "'The history of the Standard Oil Company' filetype:doc" -m 50 -d -p tb
 # find and save to csv
-ddgs text -k "'neuroscience exploring the brain' filetype:pdf" -m 70 -o csv
+ddgs text -k "'neuroscience exploring the brain' filetype:pdf" -m 70 -o neuroscience_list.csv
 # don't verify SSL when making the request
 ddgs text -k "Mississippi Burning" -v false
 # find and download images
@@ -154,11 +143,9 @@ ___
 [Go To TOP](#TOP)
 
 
-## DDGS and AsyncDDGS classes
+## DDGS class
 
-The DDGS and AsyncDDGS classes are used to retrieve search results from DuckDuckGo.com.
-To use the AsyncDDGS class, you can perform asynchronous operations using Python's asyncio library.
-To initialize an instance of the DDGS or AsyncDDGS classes, you can provide the following optional arguments:
+The DDGS classes is used to retrieve search results from DuckDuckGo.com.
 ```python3
 class DDGS:
     """DuckDuckgo_search class to get search results from duckduckgo.com
@@ -172,31 +159,12 @@ class DDGS:
     """
 ```
 
-Here is an example of initializing the DDGS class. 
+Here is an example of initializing the DDGS class.
 ```python3
 from duckduckgo_search import DDGS
 
 results = DDGS().text("python programming", max_results=5)
 print(results)
-```
-Here is an example of initializing the AsyncDDGS class:
-```python3
-import asyncio
-
-from duckduckgo_search import AsyncDDGS
-
-async def aget_results(word):
-    results = await AsyncDDGS(proxy=None).atext(word, max_results=100)
-    return results
-
-async def main():
-    words = ["sun", "earth", "moon"]
-    tasks = [aget_results(w) for w in words]
-    results = await asyncio.gather(*tasks)
-    print(results)
-
-if __name__ == "__main__":
-    asyncio.run(main())
 ```
 
 [Go To TOP](#TOP)
@@ -204,7 +172,7 @@ if __name__ == "__main__":
 ## Proxy
 
 Package supports http/https/socks proxies. Example: `http://user:pass@example.com:3128`.
-Use a rotating proxy. Otherwise, use a new proxy with each DDGS or AsyncDDGS initialization.
+Use a rotating proxy. Otherwise, use a new proxy with each DDGS class initialization.
 
 *1. The easiest way. Launch the Tor Browser*
 ```python3
@@ -216,6 +184,10 @@ results = ddgs.text("something you need", max_results=50)
 ddgs = DDGS(proxy="socks5h://user:password@geo.iproyal.com:32325", timeout=20)
 results = ddgs.text("something you need", max_results=50)
 ```
+*3. The proxy can also be set using the `DDGS_PROXY` environment variable.*
+```python3
+export DDGS_PROXY="socks5h://user:password@geo.iproyal.com:32325"
+```
 
 [Go To TOP](#TOP)
 
@@ -226,7 +198,7 @@ Exceptions:
 - `RatelimitException`: Inherits from DuckDuckGoSearchException, raised for exceeding API request rate limits.
 - `TimeoutException`: Inherits from DuckDuckGoSearchException, raised for API request timeouts.
 
-  
+
 [Go To TOP](#TOP)
 
 ## 1. chat() - AI chat
@@ -248,9 +220,6 @@ def chat(self, keywords: str, model: str = "gpt-4o-mini", timeout: int = 30) -> 
 ***Example***
 ```python
 results = DDGS().chat("summarize Daniel Defoe's The Consolidator", model='claude-3-haiku')
-
-# async
-results = await AsyncDDGS().achat('describe the characteristic habits and behaviors of humans as a species')
 ```
 
 [Go To TOP](#TOP)
@@ -263,7 +232,7 @@ def text(
     region: str = "wt-wt",
     safesearch: str = "moderate",
     timelimit: str | None = None,
-    backend: str = "api",
+    backend: str = "auto",
     max_results: int | None = None,
 ) -> list[dict[str, str]]:
     """DuckDuckGo text search generator. Query params: https://duckduckgo.com/params.
@@ -273,8 +242,8 @@ def text(
         region: wt-wt, us-en, uk-en, ru-ru, etc. Defaults to "wt-wt".
         safesearch: on, moderate, off. Defaults to "moderate".
         timelimit: d, w, m, y. Defaults to None.
-        backend: api, html, lite. Defaults to api.
-            api - collect data from https://duckduckgo.com,
+        backend: auto, html, lite. Defaults to auto.
+            auto - try all backends in random order,
             html - collect data from https://html.duckduckgo.com,
             lite - collect data from https://lite.duckduckgo.com.
         max_results: max number of results. If None, returns results only from the first response. Defaults to None.
@@ -288,9 +257,6 @@ def text(
 results = DDGS().text('live free or die', region='wt-wt', safesearch='off', timelimit='y', max_results=10)
 # Searching for pdf files
 results = DDGS().text('russia filetype:pdf', region='wt-wt', safesearch='off', timelimit='y', max_results=10)
-
-# async
-results = await AsyncDDGS().atext('sun', region='wt-wt', safesearch='off', timelimit='y', max_results=10)
 print(results)
 [
     {
@@ -303,39 +269,7 @@ print(results)
 
 [Go To TOP](#TOP)
 
-## 3. answers() - instant answers by duckduckgo.com
-
-```python
-def answers(keywords: str) -> list[dict[str, str]]:
-    """DuckDuckGo instant answers. Query params: https://duckduckgo.com/params.
-    
-    Args:
-        keywords: keywords for query,
-    
-    Returns:
-        List of dictionaries with instant answers results.
-    """
-```
-***Example***
-```python
-results = DDGS().answers("sun")
-
-# async
-results = await AsyncDDGS().aanswers("sun")
-print(results)
-[
-    {
-        "icon": None,
-        "text": "The Sun is the star at the center of the Solar System. It is a massive, nearly perfect sphere of hot plasma, heated to incandescence by nuclear fusion reactions in its core, radiating the energy from its surface mainly as visible light and infrared radiation with 10% at ultraviolet energies. It is by far the most important source of energy for life on Earth. The Sun has been an object of veneration in many cultures. It has been a central subject for astronomical research since antiquity. The Sun orbits the Galactic Center at a distance of 24,000 to 28,000 light-years. From Earth, it is 1 AU or about 8 light-minutes away. Its diameter is about 1,391,400 km, 109 times that of Earth. Its mass is about 330,000 times that of Earth, making up about 99.86% of the total mass of the Solar System. Roughly three-quarters of the Sun's mass consists of hydrogen; the rest is mostly helium, with much smaller quantities of heavier elements, including oxygen, carbon, neon, and iron.",
-        "topic": None,
-        "url": "https://en.wikipedia.org/wiki/Sun",
-    }, ...
-]
-```
-
-[Go To TOP](#TOP)
-
-## 4. images() - image search by duckduckgo.com
+## 3. images() - image search by duckduckgo.com
 
 ```python
 def images(
@@ -351,7 +285,7 @@ def images(
     max_results: int | None = None,
 ) -> list[dict[str, str]]:
     """DuckDuckGo images search. Query params: https://duckduckgo.com/params.
-    
+
     Args:
         keywords: keywords for query.
         region: wt-wt, us-en, uk-en, ru-ru, etc. Defaults to "wt-wt".
@@ -368,7 +302,7 @@ def images(
             Modify (Free to Modify, Share, and Use), ModifyCommercially (Free to Modify, Share, and
             Use Commercially). Defaults to None.
         max_results: max number of results. If None, returns results only from the first response. Defaults to None.
-    
+
     Returns:
         List of dictionaries with images search results.
     """
@@ -386,9 +320,6 @@ results = DDGS().images(
     license_image=None,
     max_results=100,
 )
-
-# async
-results = await AsyncDDGS().aimages('sun', region='wt-wt', safesearch='off', max_results=20)
 print(images)
 [
     {
@@ -405,7 +336,7 @@ print(images)
 
 [Go To TOP](#TOP)
 
-## 5. videos() - video search by duckduckgo.com
+## 4. videos() - video search by duckduckgo.com
 
 ```python
 def videos(
@@ -419,7 +350,7 @@ def videos(
     max_results: int | None = None,
 ) -> list[dict[str, str]]:
     """DuckDuckGo videos search. Query params: https://duckduckgo.com/params.
-    
+
     Args:
         keywords: keywords for query.
         region: wt-wt, us-en, uk-en, ru-ru, etc. Defaults to "wt-wt".
@@ -429,7 +360,7 @@ def videos(
         duration: short, medium, long. Defaults to None.
         license_videos: creativeCommon, youtube. Defaults to None.
         max_results: max number of results. If None, returns results only from the first response. Defaults to None.
-    
+
     Returns:
         List of dictionaries with videos search results.
     """
@@ -445,9 +376,6 @@ results = DDGS().videos(
     duration="medium",
     max_results=100,
 )
-
-# async
-results = await AsyncDDGS().avideos('sun', region='wt-wt', safesearch='off', timelimit='y', max_results=10)
 print(results)
 [
     {
@@ -475,7 +403,7 @@ print(results)
 
 [Go To TOP](#TOP)
 
-## 6. news() - news search by duckduckgo.com
+## 5. news() - news search by duckduckgo.com
 
 ```python
 def news(
@@ -486,14 +414,14 @@ def news(
     max_results: int | None = None,
 ) -> list[dict[str, str]]:
     """DuckDuckGo news search. Query params: https://duckduckgo.com/params.
-    
+
     Args:
         keywords: keywords for query.
         region: wt-wt, us-en, uk-en, ru-ru, etc. Defaults to "wt-wt".
         safesearch: on, moderate, off. Defaults to "moderate".
         timelimit: d, w, m. Defaults to None.
         max_results: max number of results. If None, returns results only from the first response. Defaults to None.
-    
+
     Returns:
         List of dictionaries with news search results.
     """
@@ -501,9 +429,6 @@ def news(
 ***Example***
 ```python
 results = DDGS().news(keywords="sun", region="wt-wt", safesearch="off", timelimit="m", max_results=20)
-
-# async
-results = await AsyncDDGS().anews('sun', region='wt-wt', safesearch='off', timelimit='d', max_results=10)
 print(results)
 [
     {
@@ -519,159 +444,6 @@ print(results)
 
 [Go To TOP](#TOP)
 
-## 7. maps() - map search by duckduckgo.com
-
-```python
-def maps(
-    keywords,
-    place: str | None = None,
-    street: str | None = None,
-    city: str | None = None,
-    county: str | None = None,
-    state: str | None = None,
-    country: str | None = None,
-    postalcode: str | None = None,
-    latitude: str | None = None,
-    longitude: str | None = None,
-    radius: int = 0,
-    max_results: int | None = None,
-) -> list[dict[str, str]]:
-    """DuckDuckGo maps search. Query params: https://duckduckgo.com/params.
-    
-    Args:
-        keywords: keywords for query
-        place: if set, the other parameters are not used. Defaults to None.
-        street: house number/street. Defaults to None.
-        city: city of search. Defaults to None.
-        county: county of search. Defaults to None.
-        state: state of search. Defaults to None.
-        country: country of search. Defaults to None.
-        postalcode: postalcode of search. Defaults to None.
-        latitude: geographic coordinate (north-south position). Defaults to None.
-        longitude: geographic coordinate (east-west position); if latitude and
-            longitude are set, the other parameters are not used. Defaults to None.
-        radius: expand the search square by the distance in kilometers. Defaults to 0.
-        max_results: max number of results. If None, returns results only from the first response. Defaults to None.
-    
-    Returns:
-        List of dictionaries with maps search results.
-    """
-```
-***Example***
-```python
-results = DDGS().maps("school", place="Uganda", max_results=50)
-
-# async
-results = await AsyncDDGS().amaps('shop', place="Baltimor", max_results=10)
-print(results)
-[
-    {
-        "title": "The Bun Shop",
-        "address": "239 W Read St, Baltimore, MD 21201-4845",
-        "country_code": None,
-        "url": "https://www.facebook.com/TheBunShop/",
-        "phone": "+14109892033",
-        "latitude": 39.3006042,
-        "longitude": -76.6195788,
-        "source": "https://www.tripadvisor.com/Restaurant_Review-g60811-d4819859-Reviews-The_Bun_Shop-Baltimore_Maryland.html?m=63959",
-        "image": "",
-        "desc": "",
-        "hours": {
-            "Fri": "07:00:00–03:00:00",
-            "Mon": "07:00:00–03:00:00",
-            "Sat": "07:00:00–03:00:00",
-            "Sun": "07:00:00–03:00:00",
-            "Thu": "07:00:00–03:00:00",
-            "Tue": "07:00:00–03:00:00",
-            "Wed": "07:00:00–03:00:00",
-            "closes_soon": 0,
-            "is_open": 1,
-            "opens_soon": 0,
-            "state_switch_time": "03:00",
-        },
-        "category": "Cafe",
-        "facebook": "",
-        "instagram": "",
-        "twitter": "",
-    }, ...
-]
-```
-
-[Go To TOP](#TOP)
-
-## 8. translate() - translation by duckduckgo.com
-
-```python
-def translate(
-    self,
-    keywords: str,
-    from_: str | None = None,
-    to: str = "en",
-) -> list[dict[str, str]]:
-    """DuckDuckGo translate.
-    
-    Args:
-        keywords: string or list of strings to translate.
-        from_: translate from (defaults automatically). Defaults to None.
-        to: what language to translate. Defaults to "en".
-    
-    Returns:
-        List od dictionaries with translated keywords.
-    """
-```
-***Example***
-```python
-keywords = 'school'
-# also valid
-keywords = ['school', 'cat']
-results = DDGS().translate(keywords, to="de")
-
-# async
-results = await AsyncDDGS().atranslate('sun', to="de")
-print(results)
-[{"detected_language": "en", "translated": "Sonne", "original": "sun"}]
-```
-
-[Go To TOP](#TOP)
-
-## 9. suggestions() - suggestions by duckduckgo.com
-
-```python
-def suggestions(
-    keywords,
-    region: str = "wt-wt",
-) -> list[dict[str, str]]:
-    """DuckDuckGo suggestions. Query params: https://duckduckgo.com/params.
-    
-    Args:
-        keywords: keywords for query.
-        region: wt-wt, us-en, uk-en, ru-ru, etc. Defaults to "wt-wt".
-    
-    Returns:
-        List of dictionaries with suggestions results.
-    """
-```
-***Example***
-```python3
-results = DDGS().suggestions("fly")
-
-# async
-results = await AsyncDDGS().asuggestions('sun')
-print(results)
-[
-    {"phrase": "sunshine live"},
-    {"phrase": "sunexpress"},
-    {"phrase": "sunday natural"},
-    {"phrase": "sunrise village spiel"},
-    {"phrase": "sunny portal"},
-    {"phrase": "sundair"},
-    {"phrase": "sunny cars"},
-    {"phrase": "sunexpress online check-in"},
-]
-```
-
 ## Disclaimer
 
 This library is not affiliated with DuckDuckGo and is for educational purposes only. It is not intended for commercial use or any purpose that violates DuckDuckGo's Terms of Service. By using this library, you acknowledge that you will not use it in a way that infringes on DuckDuckGo's terms. The official DuckDuckGo website can be found at https://duckduckgo.com.
-
-[Go To TOP](#TOP)
