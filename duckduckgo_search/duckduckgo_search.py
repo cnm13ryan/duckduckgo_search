@@ -6,17 +6,17 @@ import warnings
 from datetime import datetime, timezone
 from functools import cached_property
 from itertools import cycle
-from random import choice, shuffle
+from random import shuffle
 from time import sleep, time
 from types import TracebackType
-from typing import cast
+from typing import Any, Literal
 
-import primp  # type: ignore
+import primp
 from lxml.etree import _Element
 from lxml.html import HTMLParser as LHTMLParser
 from lxml.html import document_fromstring
 
-from .exceptions import ConversationLimitException, DuckDuckGoSearchException, RatelimitException, TimeoutException
+from .exceptions import DuckDuckGoSearchException, RatelimitException, TimeoutException
 from .utils import (
     _expand_proxy_tb_alias,
     _extract_vqd,
@@ -30,20 +30,6 @@ logger = logging.getLogger("duckduckgo_search.DDGS")
 
 class DDGS:
     """DuckDuckgo_search class to get search results from duckduckgo.com."""
-
-    _impersonates = (
-        "chrome_100", "chrome_101", "chrome_104", "chrome_105", "chrome_106", "chrome_107",
-        "chrome_108", "chrome_109", "chrome_114", "chrome_116", "chrome_117", "chrome_118",
-        "chrome_119", "chrome_120", "chrome_123", "chrome_124", "chrome_126", "chrome_127",
-        "chrome_128", "chrome_129", "chrome_130", "chrome_131",
-        "safari_ios_16.5", "safari_ios_17.2", "safari_ios_17.4.1", "safari_ios_18.1.1",
-        "safari_15.3", "safari_15.5", "safari_15.6.1", "safari_16", "safari_16.5",
-        "safari_17.0", "safari_17.2.1", "safari_17.4.1", "safari_17.5",
-        "safari_18", "safari_18.2",
-        "safari_ipad_18",
-        "edge_101", "edge_122", "edge_127", "edge_131",
-        "firefox_109", "firefox_117", "firefox_133",
-    )  # fmt: skip
 
     def __init__(
         self,
@@ -70,19 +56,18 @@ class DDGS:
             self.proxy = proxies.get("http") or proxies.get("https") if isinstance(proxies, dict) else proxies
         self.headers = headers if headers else {}
         self.headers["Referer"] = "https://duckduckgo.com/"
+        self.timeout = timeout
         self.client = primp.Client(
-            headers=self.headers,
+            # headers=self.headers,
             proxy=self.proxy,
-            timeout=timeout,
+            timeout=self.timeout,
             cookie_store=True,
             referer=True,
-            impersonate=choice(self._impersonates),
+            impersonate="random",
+            impersonate_os="random",
             follow_redirects=False,
             verify=verify,
         )
-        self._chat_messages: list[dict[str, str]] = []
-        self._chat_tokens_count = 0
-        self._chat_vqd: str = ""
         self.sleep_timestamp = 0.0
 
     def __enter__(self) -> DDGS:
@@ -109,98 +94,44 @@ class DDGS:
 
     def _get_url(
         self,
-        method: str,
+        method: Literal["GET", "HEAD", "OPTIONS", "DELETE", "POST", "PUT", "PATCH"],
         url: str,
         params: dict[str, str] | None = None,
         content: bytes | None = None,
-        data: dict[str, str] | bytes | None = None,
+        data: dict[str, str] | None = None,
+        headers: dict[str, str] | None = None,
         cookies: dict[str, str] | None = None,
-    ) -> bytes:
+        json: Any = None,
+        timeout: float | None = None,
+    ) -> Any:
         self._sleep()
         try:
-            resp = self.client.request(method, url, params=params, content=content, data=data, cookies=cookies)
+            resp = self.client.request(
+                method,
+                url,
+                params=params,
+                content=content,
+                data=data,
+                headers=headers,
+                cookies=cookies,
+                json=json,
+                timeout=timeout or self.timeout,
+            )
         except Exception as ex:
             if "time" in str(ex).lower():
                 raise TimeoutException(f"{url} {type(ex).__name__}: {ex}") from ex
             raise DuckDuckGoSearchException(f"{url} {type(ex).__name__}: {ex}") from ex
-        logger.debug(f"_get_url() {resp.url} {resp.status_code} {len(resp.content)}")
+        logger.debug(f"_get_url() {resp.url} {resp.status_code}")
         if resp.status_code == 200:
-            return cast(bytes, resp.content)
-        elif resp.status_code in (202, 301, 403):
+            return resp
+        elif resp.status_code in (202, 301, 403, 400, 429, 418):
             raise RatelimitException(f"{resp.url} {resp.status_code} Ratelimit")
         raise DuckDuckGoSearchException(f"{resp.url} return None. {params=} {content=} {data=}")
 
     def _get_vqd(self, keywords: str) -> str:
         """Get vqd value for a search query."""
-        resp_content = self._get_url("GET", "https://duckduckgo.com", params={"q": keywords})
+        resp_content = self._get_url("GET", "https://duckduckgo.com", params={"q": keywords}).content
         return _extract_vqd(resp_content, keywords)
-
-    def chat(self, keywords: str, model: str = "gpt-4o-mini", timeout: int = 30) -> str:
-        """Initiates a chat session with DuckDuckGo AI.
-
-        Args:
-            keywords (str): The initial message or question to send to the AI.
-            model (str): The model to use: "gpt-4o-mini", "claude-3-haiku", "llama-3.1-70b", "mixtral-8x7b".
-                Defaults to "gpt-4o-mini".
-            timeout (int): Timeout value for the HTTP client. Defaults to 20.
-
-        Returns:
-            str: The response from the AI.
-        """
-        models_deprecated = {
-            "gpt-3.5": "gpt-4o-mini",
-            "llama-3-70b": "llama-3.1-70b",
-        }
-        if model in models_deprecated:
-            logger.info(f"{model=} is deprecated, using {models_deprecated[model]}")
-            model = models_deprecated[model]
-        models = {
-            "claude-3-haiku": "claude-3-haiku-20240307",
-            "gpt-4o-mini": "gpt-4o-mini",
-            "llama-3.1-70b": "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo",
-            "mixtral-8x7b": "mistralai/Mixtral-8x7B-Instruct-v0.1",
-        }
-        # vqd
-        if not self._chat_vqd:
-            resp = self.client.get("https://duckduckgo.com/duckchat/v1/status", headers={"x-vqd-accept": "1"})
-            self._chat_vqd = resp.headers.get("x-vqd-4", "")
-
-        self._chat_messages.append({"role": "user", "content": keywords})
-        self._chat_tokens_count += len(keywords) // 4 if len(keywords) >= 4 else 1  # approximate number of tokens
-
-        json_data = {
-            "model": models[model],
-            "messages": self._chat_messages,
-        }
-        resp = self.client.post(
-            "https://duckduckgo.com/duckchat/v1/chat",
-            headers={"x-vqd-4": self._chat_vqd},
-            json=json_data,
-            timeout=timeout,
-        )
-        self._chat_vqd = resp.headers.get("x-vqd-4", "")
-
-        data = ",".join(x for line in resp.text.rstrip("[DONE]LIMT_CVRSA\n").split("data:") if (x := line.strip()))
-        data = json_loads("[" + data + "]")
-
-        results = []
-        for x in data:
-            if x.get("action") == "error":
-                err_message = x.get("type", "")
-                if x.get("status") == 429:
-                    raise (
-                        ConversationLimitException(err_message)
-                        if err_message == "ERR_CONVERSATION_LIMIT"
-                        else RatelimitException(err_message)
-                    )
-                raise DuckDuckGoSearchException(err_message)
-            elif message := x.get("message"):
-                results.append(message)
-        result = "".join(results)
-
-        self._chat_messages.append({"role": "assistant", "content": result})
-        self._chat_tokens_count += len(results)
-        return result
 
     def text(
         self,
@@ -263,12 +194,8 @@ class DDGS:
 
         payload = {
             "q": keywords,
-            "s": "0",
-            "o": "json",
-            "api": "d.js",
-            "vqd": "",
+            "b": "",
             "kl": region,
-            "bing_market": region,
         }
         if timelimit:
             payload["df"] = timelimit
@@ -277,7 +204,7 @@ class DDGS:
         results: list[dict[str, str]] = []
 
         for _ in range(5):
-            resp_content = self._get_url("POST", "https://html.duckduckgo.com/html", data=payload)
+            resp_content = self._get_url("POST", "https://html.duckduckgo.com/html", data=payload).content
             if b"No  results." in resp_content:
                 return results
 
@@ -335,12 +262,7 @@ class DDGS:
 
         payload = {
             "q": keywords,
-            "s": "0",
-            "o": "json",
-            "api": "d.js",
-            "vqd": "",
             "kl": region,
-            "bing_market": region,
         }
         if timelimit:
             payload["df"] = timelimit
@@ -349,7 +271,7 @@ class DDGS:
         results: list[dict[str, str]] = []
 
         for _ in range(5):
-            resp_content = self._get_url("POST", "https://lite.duckduckgo.com/lite/", data=payload)
+            resp_content = self._get_url("POST", "https://lite.duckduckgo.com/lite/", data=payload).content
             if b"No more results." in resp_content:
                 return results
 
@@ -394,11 +316,15 @@ class DDGS:
                             if max_results and len(results) >= max_results:
                                 return results
 
-            next_page_s = tree.xpath("//form[./input[contains(@value, 'ext')]]/input[@name='s']/@value")
-            if not next_page_s or not max_results:
+            npx = tree.xpath("//form[./input[contains(@value, 'ext')]]")
+            if not npx or not max_results:
                 return results
-            elif isinstance(next_page_s, list):
-                payload["s"] = str(next_page_s[0])
+            next_page = npx[-1] if isinstance(npx, list) else None
+            if isinstance(next_page, _Element):
+                names = next_page.xpath('.//input[@type="hidden"]/@name')
+                values = next_page.xpath('.//input[@type="hidden"]/@value')
+                if isinstance(names, list) and isinstance(values, list):
+                    payload = {str(n): str(v) for n, v in zip(names, values)}
 
         return results
 
@@ -466,7 +392,9 @@ class DDGS:
         results: list[dict[str, str]] = []
 
         for _ in range(5):
-            resp_content = self._get_url("GET", "https://duckduckgo.com/i.js", params=payload)
+            resp_content = self._get_url(
+                "GET", "https://duckduckgo.com/i.js", params=payload, headers={"Referer": "https://duckduckgo.com/"}
+            ).content
             resp_json = json_loads(resp_content)
             page_data = resp_json.get("results", [])
 
@@ -546,7 +474,7 @@ class DDGS:
         results: list[dict[str, str]] = []
 
         for _ in range(8):
-            resp_content = self._get_url("GET", "https://duckduckgo.com/v.js", params=payload)
+            resp_content = self._get_url("GET", "https://duckduckgo.com/v.js", params=payload).content
             resp_json = json_loads(resp_content)
             page_data = resp_json.get("results", [])
 
@@ -608,7 +536,7 @@ class DDGS:
         results: list[dict[str, str]] = []
 
         for _ in range(5):
-            resp_content = self._get_url("GET", "https://duckduckgo.com/news.js", params=payload)
+            resp_content = self._get_url("GET", "https://duckduckgo.com/news.js", params=payload).content
             resp_json = json_loads(resp_content)
             page_data = resp_json.get("results", [])
 
