@@ -1,7 +1,9 @@
-![Python >= 3.8](https://img.shields.io/badge/python->=3.8-red.svg) [![](https://badgen.net/github/release/deedy5/duckduckgo_search)](https://github.com/deedy5/duckduckgo_search/releases) [![](https://badge.fury.io/py/duckduckgo-search.svg)](https://pypi.org/project/duckduckgo-search) [![Downloads](https://static.pepy.tech/badge/duckduckgo-search)](https://pepy.tech/project/duckduckgo-search) [![Downloads](https://static.pepy.tech/badge/duckduckgo-search/week)](https://pepy.tech/project/duckduckgo-search)
+![Python >= 3.9](https://img.shields.io/badge/python->=3.9-red.svg) [![](https://badgen.net/github/release/deedy5/duckduckgo_search)](https://github.com/deedy5/duckduckgo_search/releases) [![](https://badge.fury.io/py/duckduckgo-search.svg)](https://pypi.org/project/duckduckgo-search)
 # Duckduckgo_search<a name="TOP"></a>
 
-AI chat and search for text, news, images and videos using the DuckDuckGo.com search engine.
+Search for text, news, images and videos using the DuckDuckGo.com search engine.
+
+:bangbang: AI chat moved to [duckai](https://pypi.org/project/duckai) package
 
 ## Table of Contents
 * [Install](#install)
@@ -11,11 +13,10 @@ AI chat and search for text, news, images and videos using the DuckDuckGo.com se
 * [DDGS class](#ddgs-class)
 * [Proxy](#proxy)
 * [Exceptions](#exceptions)
-* [1. chat() - AI chat](#1-chat---ai-chat)
-* [2. text() - text search](#2-text---text-search-by-duckduckgocom)
-* [3. images() - image search](#3-images---image-search-by-duckduckgocom)
-* [4. videos() - video search](#4-videos---video-search-by-duckduckgocom)
-* [5. news() - news search](#5-news---news-search-by-duckduckgocom)
+* [1. text() - text search](#2-text---text-search-by-duckduckgocom)
+* [2. images() - image search](#3-images---image-search-by-duckduckgocom)
+* [3. videos() - video search](#4-videos---video-search-by-duckduckgocom)
+* [4. news() - news search](#5-news---news-search-by-duckduckgocom)
 * [Disclaimer](#disclaimer)
 
 ## Install
@@ -30,8 +31,6 @@ ddgs --help
 ```
 CLI examples:
 ```python3
-# AI chat
-ddgs chat
 # text search
 ddgs text -k "Assyrian siege of Jerusalem"
 # find and download pdf files via proxy
@@ -193,38 +192,24 @@ export DDGS_PROXY="socks5h://user:password@geo.iproyal.com:32325"
 
 ## Exceptions
 
+```python
+from duckduckgo_search.exceptions import (
+    ConversationLimitException,
+    DuckDuckGoSearchException,
+    RatelimitException,
+    TimeoutException,
+)
+```
+
 Exceptions:
 - `DuckDuckGoSearchException`: Base exception for duckduckgo_search errors.
 - `RatelimitException`: Inherits from DuckDuckGoSearchException, raised for exceeding API request rate limits.
 - `TimeoutException`: Inherits from DuckDuckGoSearchException, raised for API request timeouts.
-
-
-[Go To TOP](#TOP)
-
-## 1. chat() - AI chat
-
-```python
-def chat(self, keywords: str, model: str = "gpt-4o-mini", timeout: int = 30) -> str:
-    """Initiates a chat session with DuckDuckGo AI.
-
-    Args:
-        keywords (str): The initial message or question to send to the AI.
-        model (str): The model to use: "gpt-4o-mini", "claude-3-haiku", "llama-3.1-70b", "mixtral-8x7b".
-            Defaults to "gpt-4o-mini".
-        timeout (int): Timeout value for the HTTP client. Defaults to 30.
-
-    Returns:
-        str: The response from the AI.
-    """
-```
-***Example***
-```python
-results = DDGS().chat("summarize Daniel Defoe's The Consolidator", model='claude-3-haiku')
-```
+- `ConversationLimitException`: Inherits from DuckDuckGoSearchException, raised for conversation limit during API requests to AI endpoint.
 
 [Go To TOP](#TOP)
 
-## 2. text() - text search by duckduckgo.com
+## 1. text() - text search by duckduckgo.com
 
 ```python
 def text(
@@ -269,7 +254,7 @@ print(results)
 
 [Go To TOP](#TOP)
 
-## 3. images() - image search by duckduckgo.com
+## 2. images() - image search by duckduckgo.com
 
 ```python
 def images(
@@ -336,7 +321,7 @@ print(images)
 
 [Go To TOP](#TOP)
 
-## 4. videos() - video search by duckduckgo.com
+## 3. videos() - video search by duckduckgo.com
 
 ```python
 def videos(
@@ -403,7 +388,7 @@ print(results)
 
 [Go To TOP](#TOP)
 
-## 5. news() - news search by duckduckgo.com
+## 4. news() - news search by duckduckgo.com
 
 ```python
 def news(
