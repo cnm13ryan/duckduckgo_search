@@ -16,6 +16,7 @@ jobs:
 
     strategy:
       fail-fast: false
+      #max-parallel: 1
       matrix:
         python-version: ["3.9", "3.13"]
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -29,7 +30,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install -U pip
-        python -m pip install .[lxml,dev]
+        python -m pip install .[dev]
         python -m pip install orjson
     - name: Ruff
       run: |
@@ -39,5 +40,11 @@ jobs:
       run: |
         mypy --install-types --non-interactive .
     - name: Pytest
+      id: pytest
+      continue-on-error: true
       run: |
-        pytest
+        pytest -v
+    - name: Pytest re-run failures
+      if: steps.pytest.conclusion == 'failure'
+      run: |
+        pytest -v --lf

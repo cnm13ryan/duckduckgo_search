@@ -1,27 +1,29 @@
-![Python >= 3.9](https://img.shields.io/badge/python->=3.9-red.svg) [![](https://badgen.net/github/release/deedy5/duckduckgo_search)](https://github.com/deedy5/duckduckgo_search/releases) [![](https://badge.fury.io/py/duckduckgo-search.svg)](https://pypi.org/project/duckduckgo-search)
-# Duckduckgo_search<a name="TOP"></a>
+![Python >= 3.9](https://img.shields.io/badge/python->=3.9-red.svg) [![](https://badgen.net/github/release/deedy5/ddgs)](https://github.com/deedy5/ddgs/releases) [![](https://badge.fury.io/py/ddgs.svg)](https://pypi.org/project/ddgs) [![](https://pepy.tech/badge/ddgs/month)](https://pypistats.org/packages/ddgs)
+# DDGS | Dux Distributed Global Search<a name="TOP"></a>
 
-Search for text, news, images and videos using the DuckDuckGo.com search engine.
+A metasearch library that aggregates results from diverse web search services.
 
-:bangbang: AI chat moved to [duckai](https://pypi.org/project/duckai) package
 
 ## Table of Contents
 * [Install](#install)
 * [CLI version](#cli-version)
-* [Duckduckgo search operators](#duckduckgo-search-operators)
+* [DDGS search operators](#ddgs-search-operators)
 * [Regions](#regions)
+* [Engines](#engines)
+* [Tips](#tips)
 * [DDGS class](#ddgs-class)
 * [Proxy](#proxy)
 * [Exceptions](#exceptions)
-* [1. text() - text search](#2-text---text-search-by-duckduckgocom)
-* [2. images() - image search](#3-images---image-search-by-duckduckgocom)
-* [3. videos() - video search](#4-videos---video-search-by-duckduckgocom)
-* [4. news() - news search](#5-news---news-search-by-duckduckgocom)
+* [1. text()](#1-text)
+* [2. images()](#2-images)
+* [3. videos()](#3-videos)
+* [4. news()](#4-news)
+* [5. books()](#5-books)
 * [Disclaimer](#disclaimer)
 
 ## Install
 ```python
-pip install -U duckduckgo_search
+pip install -U ddgs
 ```
 
 ## CLI version
@@ -30,27 +32,37 @@ pip install -U duckduckgo_search
 ddgs --help
 ```
 CLI examples:
-```python3
-# text search
-ddgs text -k "Assyrian siege of Jerusalem"
-# find and download pdf files via proxy
-ddgs text -k "Economics in one lesson filetype:pdf" -r wt-wt -m 50 -p https://1.2.3.4:1234 -d -dd economics_reading
-# using Tor Browser as a proxy (`tb` is an alias for `socks5://127.0.0.1:9150`)
-ddgs text -k "'The history of the Standard Oil Company' filetype:doc" -m 50 -d -p tb
-# find and save to csv
-ddgs text -k "'neuroscience exploring the brain' filetype:pdf" -m 70 -o neuroscience_list.csv
-# don't verify SSL when making the request
-ddgs text -k "Mississippi Burning" -v false
-# find and download images
-ddgs images -k "beware of false prophets" -r wt-wt -type photo -m 500 -d
-# get news for the last day and save to json
-ddgs news -k "sanctions" -m 100 -t d -o json
-```
+
+a) text:
+ - *query='neurophysiology of the flickering light perception'*
+ - *region='cn'*
+ - *language='zh'*
+ - *max_results=5*
+ - *backend='google, brave'*
+ - *proxy='socks5h://127.0.0.1:9150'* ('tb' is an alias for the Tor browser)
+
+`ddgs text -q 'neurophysiology of the flickering light perception' -r cn-zh -m 5 -b google -b brave -pr tb`
+
+b) news:
+ - *query='etna eraption'*
+ - *region='it'*
+ - *language='it'*
+ - *max_results=10*
+
+`ddgs news -q 'etna eruption' -r it-it -m 10`
+
+c) books:
+ - *query='dolphins cousteau'*
+ - *max_results=100*
+ - *output='csv'* (save as csv file)
+
+`ddgs books -q 'dolphins cousteau' -m 100 -o /tmp/books.csv`
+
 [Go To TOP](#TOP)
 
-## Duckduckgo search operators
+## DDGS search operators
 
-| Keywords example |	Result|
+| Query example |	Result|
 | ---     | ---   |
 | cats dogs |	Results about cats or dogs |
 | "cats and dogs" |	Results for exact term "cats and dogs". If no results are found, related results are shown. |
@@ -135,32 +147,62 @@ ddgs news -k "sanctions" -m 100 -t d -o json
     ue-es for United States (es)
     ve-es for Venezuela
     vn-vi for Vietnam
-    wt-wt for No region
 ___
 </details>
 
 [Go To TOP](#TOP)
 
+## Engines
+
+| DDGS function | Available backends |
+| --------------|:-------------------|
+| text()        | `bing`, `brave`, `duckduckgo`, `google`, `mojeek`, `mullvad_brave`, `mullvad_google`, `yandex`, `yahoo`, `wikipedia`|
+| images()      | `duckduckgo` |
+| videos()      | `duckduckgo` |
+| news()        | `duckduckgo`, `yahoo` |
+| books()       | `annasarchive` |
+
+[Go To TOP](#TOP)
+
+## Tips
+
+⚠️ **For optimal usage, keep `backend='auto'`** (the default) and specify the desired number of results with `max_results`. This allows the library to automatically handle temporary backend unavailability.
+
+The library considers:
+
+    - Duplicate providers (e.g., yahoo = bing, mullvad_google = google, etc.)
+    - Result repeatability, prioritizing frequently repeated positions
+    - Wikipedia summaries at the top of results, if available
+
+To customize the search engine order, provide the backends as a comma-separated string (for example: `backend="google, brave, yahoo"`). The library will query them in order, falling back to the next one if an error occurs.
+
+The library works in parallel, adjusting concurrent requests based on `max_results`. This ensures efficient and fast retrieval. You can change the maximum number of threads using the parameter `DDGS.threads` (for example, `DDGS.threads = 20`).
+
+Note that a single query returns results from one page (`page=1`) of the selected backends; iterate over pages for more results. Setting `max_results` to None returns all unique collected results.
+
+The `region` parameter also has a strong influence on the quality of the search. Set it as `{country}-{language}`: `ar-es`, `pl-pl`, `cn-zh`, etc.
+
+Note that some backends may be temporarily unavailable due to ratelimiting or ISP blockages in certain countries. In such cases, using a proxy server can help bypass these restrictions.
+
+[Go To TOP](#TOP)
 
 ## DDGS class
 
-The DDGS classes is used to retrieve search results from DuckDuckGo.com.
 ```python3
 class DDGS:
-    """DuckDuckgo_search class to get search results from duckduckgo.com
+    """Dux Distributed Global Search. A metasearch library that aggregates results from diverse web search services.
 
     Args:
-        headers (dict, optional): Dictionary of headers for the HTTP client. Defaults to None.
         proxy (str, optional): proxy for the HTTP client, supports http/https/socks5 protocols.
             example: "http://user:pass@example.com:3128". Defaults to None.
-        timeout (int, optional): Timeout value for the HTTP client. Defaults to 10.
+        timeout (int, optional): Timeout value for the HTTP client. Defaults to 5.
         verify (bool): SSL verification when making the request. Defaults to True.
     """
 ```
 
 Here is an example of initializing the DDGS class.
 ```python3
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 
 results = DDGS().text("python programming", max_results=5)
 print(results)
@@ -175,17 +217,17 @@ Use a rotating proxy. Otherwise, use a new proxy with each DDGS class initializa
 
 *1. The easiest way. Launch the Tor Browser*
 ```python3
-ddgs = DDGS(proxy="tb", timeout=20)  # "tb" is an alias for "socks5://127.0.0.1:9150"
+ddgs = DDGS(proxy="tb", timeout=10)  # "tb" is an alias for "socks5h://127.0.0.1:9150"
 results = ddgs.text("something you need", max_results=50)
 ```
-*2. Use any proxy server* (*example with [iproyal rotating residential proxies](https://iproyal.com?r=residential_proxies)*)
+*2. Use any proxy server*
 ```python3
-ddgs = DDGS(proxy="socks5h://user:password@geo.iproyal.com:32325", timeout=20)
+ddgs = DDGS(proxy="socks5h://user:password@1.2.3.4:8080", timeout=10)
 results = ddgs.text("something you need", max_results=50)
 ```
 *3. The proxy can also be set using the `DDGS_PROXY` environment variable.*
 ```python3
-export DDGS_PROXY="socks5h://user:password@geo.iproyal.com:32325"
+export DDGS_PROXY="socks5h://user:password@1.2.3.4:8080"
 ```
 
 [Go To TOP](#TOP)
@@ -193,45 +235,42 @@ export DDGS_PROXY="socks5h://user:password@geo.iproyal.com:32325"
 ## Exceptions
 
 ```python
-from duckduckgo_search.exceptions import (
-    ConversationLimitException,
-    DuckDuckGoSearchException,
+from ddgs.exceptions import (
+    DDGSException,
     RatelimitException,
     TimeoutException,
 )
 ```
 
 Exceptions:
-- `DuckDuckGoSearchException`: Base exception for duckduckgo_search errors.
-- `RatelimitException`: Inherits from DuckDuckGoSearchException, raised for exceeding API request rate limits.
-- `TimeoutException`: Inherits from DuckDuckGoSearchException, raised for API request timeouts.
-- `ConversationLimitException`: Inherits from DuckDuckGoSearchException, raised for conversation limit during API requests to AI endpoint.
+- `DDGSException`: Base exception for ddgs errors.
+- `RatelimitException`: Inherits from DDGSException, raised for exceeding API request rate limits.
+- `TimeoutException`: Inherits from DDGSException, raised for API request timeouts.
 
 [Go To TOP](#TOP)
 
-## 1. text() - text search by duckduckgo.com
+## 1. text()
 
 ```python
 def text(
-    keywords: str,
-    region: str = "wt-wt",
+    query: str,
+    region: str = "us-en",
     safesearch: str = "moderate",
     timelimit: str | None = None,
+    max_results: int | None = 10,
+    page: int = 1,
     backend: str = "auto",
-    max_results: int | None = None,
 ) -> list[dict[str, str]]:
-    """DuckDuckGo text search generator. Query params: https://duckduckgo.com/params.
+    """DDGS text metasearch.
 
     Args:
-        keywords: keywords for query.
-        region: wt-wt, us-en, uk-en, ru-ru, etc. Defaults to "wt-wt".
+        query: text search query.
+        region: us-en, uk-en, ru-ru, etc. Defaults to us-en.
         safesearch: on, moderate, off. Defaults to "moderate".
         timelimit: d, w, m, y. Defaults to None.
-        backend: auto, html, lite. Defaults to auto.
-            auto - try all backends in random order,
-            html - collect data from https://html.duckduckgo.com,
-            lite - collect data from https://lite.duckduckgo.com.
-        max_results: max number of results. If None, returns results only from the first response. Defaults to None.
+        max_results: maximum number of results. Defaults to 10.
+        page: page of results. Defaults to 1.
+        backend: A single or comma-delimited backends. Defaults to "auto".
 
     Returns:
         List of dictionaries with search results.
@@ -239,9 +278,9 @@ def text(
 ```
 ***Example***
 ```python
-results = DDGS().text('live free or die', region='wt-wt', safesearch='off', timelimit='y', max_results=10)
+results = DDGS().text('live free or die', region='us-en', safesearch='off', timelimit='y', page=1, backend="auto")
 # Searching for pdf files
-results = DDGS().text('russia filetype:pdf', region='wt-wt', safesearch='off', timelimit='y', max_results=10)
+results = DDGS().text('russia filetype:pdf', region='us-en', safesearch='off', timelimit='y', page=1, backend="auto")
 print(results)
 [
     {
@@ -254,28 +293,33 @@ print(results)
 
 [Go To TOP](#TOP)
 
-## 2. images() - image search by duckduckgo.com
+## 2. images()
 
 ```python
 def images(
-    keywords: str,
-    region: str = "wt-wt",
+    query: str,
+    region: str = "us-en",
     safesearch: str = "moderate",
     timelimit: str | None = None,
+    max_results: int | None = 10,
+    page: int = 1,
+    backend: str = "auto",
     size: str | None = None,
     color: str | None = None,
     type_image: str | None = None,
     layout: str | None = None,
     license_image: str | None = None,
-    max_results: int | None = None,
 ) -> list[dict[str, str]]:
-    """DuckDuckGo images search. Query params: https://duckduckgo.com/params.
+    """DDGS images metasearch.
 
     Args:
-        keywords: keywords for query.
-        region: wt-wt, us-en, uk-en, ru-ru, etc. Defaults to "wt-wt".
+        query: images search query.
+        region: us-en, uk-en, ru-ru, etc. Defaults to us-en.
         safesearch: on, moderate, off. Defaults to "moderate".
-        timelimit: Day, Week, Month, Year. Defaults to None.
+        timelimit: d, w, m, y. Defaults to None.
+        max_results: maximum number of results. Defaults to 10.
+        page: page of results. Defaults to 1.
+        backend: A single or comma-delimited backends. Defaults to "auto".
         size: Small, Medium, Large, Wallpaper. Defaults to None.
         color: color, Monochrome, Red, Orange, Yellow, Green, Blue,
             Purple, Pink, Brown, Black, Gray, Teal, White. Defaults to None.
@@ -286,7 +330,6 @@ def images(
             Share (Free to Share and Use), ShareCommercially (Free to Share and Use Commercially),
             Modify (Free to Modify, Share, and Use), ModifyCommercially (Free to Modify, Share, and
             Use Commercially). Defaults to None.
-        max_results: max number of results. If None, returns results only from the first response. Defaults to None.
 
     Returns:
         List of dictionaries with images search results.
@@ -295,15 +338,17 @@ def images(
 ***Example***
 ```python
 results = DDGS().images(
-    keywords="butterfly",
-    region="wt-wt",
+    query="butterfly",
+    region="us-en",
     safesearch="off",
+    timelimit="m",
+    page=1,
+    backend="auto",
     size=None,
     color="Monochrome",
     type_image=None,
     layout=None,
     license_image=None,
-    max_results=100,
 )
 print(images)
 [
@@ -321,30 +366,34 @@ print(images)
 
 [Go To TOP](#TOP)
 
-## 3. videos() - video search by duckduckgo.com
+## 3. videos()
 
 ```python
 def videos(
-    keywords: str,
-    region: str = "wt-wt",
+    query: str,
+    region: str = "us-en",
     safesearch: str = "moderate",
     timelimit: str | None = None,
+    max_results: int | None = 10,
+    page: int = 1,
+    backend: str = "auto",
     resolution: str | None = None,
     duration: str | None = None,
     license_videos: str | None = None,
-    max_results: int | None = None,
 ) -> list[dict[str, str]]:
-    """DuckDuckGo videos search. Query params: https://duckduckgo.com/params.
+    """DDGS videos metasearch.
 
     Args:
-        keywords: keywords for query.
-        region: wt-wt, us-en, uk-en, ru-ru, etc. Defaults to "wt-wt".
+        query: videos search query.
+        region: us-en, uk-en, ru-ru, etc. Defaults to us-en.
         safesearch: on, moderate, off. Defaults to "moderate".
         timelimit: d, w, m. Defaults to None.
+        max_results: maximum number of results. Defaults to 10.
+        page: page of results. Defaults to 1.
+        backend: A single or comma-delimited backends. Defaults to "auto".
         resolution: high, standart. Defaults to None.
         duration: short, medium, long. Defaults to None.
         license_videos: creativeCommon, youtube. Defaults to None.
-        max_results: max number of results. If None, returns results only from the first response. Defaults to None.
 
     Returns:
         List of dictionaries with videos search results.
@@ -353,13 +402,14 @@ def videos(
 ***Example***
 ```python
 results = DDGS().videos(
-    keywords="cars",
-    region="wt-wt",
+    query="cars",
+    region="us-en",
     safesearch="off",
     timelimit="w",
+    page=1,
+    backend="auto",
     resolution="high",
     duration="medium",
-    max_results=100,
 )
 print(results)
 [
@@ -388,24 +438,28 @@ print(results)
 
 [Go To TOP](#TOP)
 
-## 4. news() - news search by duckduckgo.com
+## 4. news()
 
 ```python
 def news(
-    keywords: str,
-    region: str = "wt-wt",
+    query: str,
+    region: str = "us-en",
     safesearch: str = "moderate",
     timelimit: str | None = None,
-    max_results: int | None = None,
+    max_results: int | None = 10,
+    page: int = 1,
+    backend: str = "auto",
 ) -> list[dict[str, str]]:
-    """DuckDuckGo news search. Query params: https://duckduckgo.com/params.
+    """DDGS news metasearch.
 
     Args:
-        keywords: keywords for query.
-        region: wt-wt, us-en, uk-en, ru-ru, etc. Defaults to "wt-wt".
+        query: news search query.
+        region: us-en, uk-en, ru-ru, etc. Defaults to us-en.
         safesearch: on, moderate, off. Defaults to "moderate".
         timelimit: d, w, m. Defaults to None.
-        max_results: max number of results. If None, returns results only from the first response. Defaults to None.
+        max_results: maximum number of results. Defaults to 10.
+        page: page of results. Defaults to 1.
+        backend: A single or comma-delimited backends. Defaults to "auto".
 
     Returns:
         List of dictionaries with news search results.
@@ -413,7 +467,7 @@ def news(
 ```
 ***Example***
 ```python
-results = DDGS().news(keywords="sun", region="wt-wt", safesearch="off", timelimit="m", max_results=20)
+results = DDGS().news(query="sun", region="us-en", safesearch="off", timelimit="m", page=1, backend="auto")
 print(results)
 [
     {
@@ -429,6 +483,45 @@ print(results)
 
 [Go To TOP](#TOP)
 
+## 5. books()
+
+```python
+def books(
+    query: str,
+    max_results: int | None = 10,
+    page: int = 1,
+    backend: str = "auto",
+) -> list[dict[str, str]]:
+    """DDGS books metasearch.
+
+    Args:
+        query: news search query.
+        max_results: maximum number of results. Defaults to 10.
+        page: page of results. Defaults to 1.
+        backend: A single or comma-delimited backends. Defaults to "auto".
+
+    Returns:
+        List of dictionaries with news search results.
+    """
+```
+***Example***
+```python
+results = DDGS().books(query="sea wolf jack london", page=1, backend="auto")
+print(results)
+[
+    {
+        'title': 'The Sea-Wolf',
+        'author': 'Jack London',
+        'publisher': 'DigiCat, 2022',
+        'info': 'English [en], .epub, 🚀/zlib, 0.5MB, 📗 Book (unknown)',
+        'url': 'https://annas-archive.li/md5/574f6556f1df6717de4044e36c7c2782',
+        'thumbnail': 'https://s3proxy.cdn-zlib.sk//covers299/collections/userbooks/da4954486be7c2b2b9f70b2aa5bcf01292de3ea510b5656f892821950ded9ada.jpg',
+    }, ...
+]
+```
+
+[Go To TOP](#TOP)
+
 ## Disclaimer
 
-This library is not affiliated with DuckDuckGo and is for educational purposes only. It is not intended for commercial use or any purpose that violates DuckDuckGo's Terms of Service. By using this library, you acknowledge that you will not use it in a way that infringes on DuckDuckGo's terms. The official DuckDuckGo website can be found at https://duckduckgo.com.
+This library is for educational purposes only.
