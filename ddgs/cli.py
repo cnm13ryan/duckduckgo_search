@@ -6,14 +6,15 @@ import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 from urllib.parse import unquote
 
 import click
 import primp
 
-from .duckduckgo_search import DDGS
+from . import __version__
+from .ddgs import DDGS
 from .utils import _expand_proxy_tb_alias, json_dumps
-from .version import __version__
 
 logger = logging.getLogger(__name__)
 
@@ -37,9 +38,15 @@ COLORS = {
 }
 
 
-def _save_data(keywords: str, data: list[dict[str, str]], function_name: str, filename: str | None) -> None:
+def _convert_tuple_to_csv(ctx: click.Context, param: click.Parameter, value: Any) -> str:
+    if value is not None and isinstance(value, tuple):
+        return ",".join(value)
+    return ""
+
+
+def _save_data(query: str, data: list[dict[str, str]], function_name: str, filename: str | None) -> None:
     filename, ext = filename.rsplit(".", 1) if filename and filename.endswith((".csv", ".json")) else (None, filename)
-    filename = filename if filename else f"{function_name}_{keywords}_{datetime.now():%Y%m%d_%H%M%S}"
+    filename = filename if filename else f"{function_name}_{query}_{datetime.now():%Y%m%d_%H%M%S}"
     if ext == "csv":
         _save_csv(f"{filename}.{ext}", data)
     elif ext == "json":
@@ -77,9 +84,9 @@ def _print_data(data: list[dict[str, str]]) -> None:
             input()
 
 
-def _sanitize_keywords(keywords: str) -> str:
-    keywords = (
-        keywords.replace("filetype", "")
+def _sanitize_query(query: str) -> str:
+    query = (
+        query.replace("filetype", "")
         .replace(":", "")
         .replace('"', "'")
         .replace("site", "")
@@ -88,7 +95,7 @@ def _sanitize_keywords(keywords: str) -> str:
         .replace("\\", "_")
         .replace(" ", "")
     )
-    return keywords
+    return query
 
 
 def _download_file(url: str, dir_path: str, filename: str, proxy: str | None, verify: bool) -> None:
@@ -104,7 +111,7 @@ def _download_file(url: str, dir_path: str, filename: str, proxy: str | None, ve
 
 
 def _download_results(
-    keywords: str,
+    query: str,
     results: list[dict[str, str]],
     function_name: str,
     proxy: str | None = None,
@@ -112,7 +119,7 @@ def _download_results(
     verify: bool = True,
     pathname: str | None = None,
 ) -> None:
-    path = pathname if pathname else f"{function_name}_{keywords}_{datetime.now():%Y%m%d_%H%M%S}"
+    path = pathname if pathname else f"{function_name}_{query}_{datetime.now():%Y%m%d_%H%M%S}"
     os.makedirs(path, exist_ok=True)
 
     threads = 10 if threads is None else threads
@@ -134,7 +141,7 @@ def _download_results(
 
 @click.group(chain=True)
 def cli() -> None:
-    """duckduckgo_search CLI tool"""
+    """DDGS CLI tool"""
     pass
 
 
@@ -152,47 +159,75 @@ def version() -> str:
 
 
 @cli.command()
-@click.option("-k", "--keywords", required=True, help="text search, keywords for query")
-@click.option("-r", "--region", default="wt-wt", help="wt-wt, us-en, ru-ru, etc. -region https://duckduckgo.com/params")
+@click.option("-q", "--query", help="text search query")
+@click.option("-k", "--keywords", help="(Deprecated) text search query")  # deprecated
+@click.option("-r", "--region", default="us-en", help="us-en, ru-ru, etc.")
 @click.option("-s", "--safesearch", default="moderate", type=click.Choice(["on", "moderate", "off"]))
 @click.option("-t", "--timelimit", type=click.Choice(["d", "w", "m", "y"]), help="day, week, month, year")
-@click.option("-m", "--max_results", type=int, help="maximum number of results")
+@click.option("-m", "--max_results", default=10, type=int, help="maximum number of results")
+@click.option("-p", "--page", default=1, type=int, help="page number of results")
+@click.option(
+    "-b",
+    "--backend",
+    default=["auto"],
+    type=click.Choice(
+        [
+            "auto",
+            "all",
+            "bing",
+            "brave",
+            "duckduckgo",
+            "google",
+            "mojeek",
+            "mullvad_brave",
+            "mullvad_google",
+            "yandex",
+            "yahoo",
+            "wikipedia",
+        ]
+    ),
+    multiple=True,
+    callback=_convert_tuple_to_csv,
+)
 @click.option("-o", "--output", help="csv, json or filename.csv|json (save the results to a csv or json file)")
 @click.option("-d", "--download", is_flag=True, default=False, help="download results. -dd to set custom directory")
 @click.option("-dd", "--download-directory", help="Specify custom download directory")
-@click.option("-b", "--backend", default="auto", type=click.Choice(["auto", "html", "lite"]))
 @click.option("-th", "--threads", default=10, help="download threads, default=10")
-@click.option("-p", "--proxy", help="the proxy to send requests, example: socks5://127.0.0.1:9150")
+@click.option("-pr", "--proxy", help="the proxy to send requests, example: socks5h://127.0.0.1:9150")
 @click.option("-v", "--verify", default=True, help="verify SSL when making the request")
 def text(
-    keywords: str,
+    query: str,
+    keywords: str | None,  # deprecated
     region: str,
     safesearch: str,
     timelimit: str | None,
+    max_results: int | None,
+    page: int,
     backend: str,
     output: str | None,
     download: bool,
     download_directory: str | None,
     threads: int,
-    max_results: int | None,
     proxy: str | None,
     verify: bool,
 ) -> None:
-    """CLI function to perform a text search using DuckDuckGo API."""
+    """CLI function to perform a DDGS text metasearch."""
+    assert (query := keywords or query), "Please provide a query."
     data = DDGS(proxy=_expand_proxy_tb_alias(proxy), verify=verify).text(
-        keywords=keywords,
+        query=query,
         region=region,
         safesearch=safesearch,
         timelimit=timelimit,
-        backend=backend,
         max_results=max_results,
+        page=page,
+        backend=backend,
     )
-    keywords = _sanitize_keywords(keywords)
+    query = _sanitize_query(query)
     if output:
-        _save_data(keywords, data, "text", filename=output)
+        _save_data(query, data, "text", filename=output)
     if download:
         _download_results(
-            keywords,
+            query,
             data,
             function_name="text",
             proxy=proxy,
@@ -205,10 +240,21 @@ def text(
 
 
 @cli.command()
-@click.option("-k", "--keywords", required=True, help="keywords for query")
-@click.option("-r", "--region", default="wt-wt", help="wt-wt, us-en, ru-ru, etc. -region https://duckduckgo.com/params")
+@click.option("-q", "--query", help="images search query")
+@click.option("-k", "--keywords", help="(Deprecated) images search query")  # deprecated
+@click.option("-r", "--region", default="us-en", help="us-en, ru-ru, etc.")
 @click.option("-s", "--safesearch", default="moderate", type=click.Choice(["on", "moderate", "off"]))
-@click.option("-t", "--timelimit", type=click.Choice(["Day", "Week", "Month", "Year"]))
+@click.option("-t", "--timelimit", type=click.Choice(["d", "w", "m", "y"]))
+@click.option("-m", "--max_results", default=10, type=int, help="maximum number of results")
+@click.option("-p", "--page", default=1, type=int, help="page number of results")
+@click.option(
+    "-b",
+    "--backend",
+    default=["auto"],
+    type=click.Choice(["auto", "all", "duckduckgo"]),
+    multiple=True,
+    callback=_convert_tuple_to_csv,
+)
 @click.option("-size", "--size", type=click.Choice(["Small", "Medium", "Large", "Wallpaper"]))
 @click.option(
     "-c",
@@ -239,18 +285,21 @@ def text(
     "--license_image",
     type=click.Choice(["any", "Public", "Share", "ShareCommercially", "Modify", "ModifyCommercially"]),
 )
-@click.option("-m", "--max_results", type=int, help="maximum number of results")
 @click.option("-o", "--output", help="csv, json or filename.csv|json (save the results to a csv or json file)")
 @click.option("-d", "--download", is_flag=True, default=False, help="download results. -dd to set custom directory")
 @click.option("-dd", "--download-directory", help="Specify custom download directory")
 @click.option("-th", "--threads", default=10, help="download threads, default=10")
-@click.option("-p", "--proxy", help="the proxy to send requests, example: socks5://127.0.0.1:9150")
+@click.option("-pr", "--proxy", help="the proxy to send requests, example: socks5h://127.0.0.1:9150")
 @click.option("-v", "--verify", default=True, help="verify SSL when making the request")
 def images(
-    keywords: str,
+    query: str,
+    keywords: str | None,  # deprecated
     region: str,
     safesearch: str,
     timelimit: str | None,
+    max_results: int | None,
+    page: int,
+    backend: str,
     size: str | None,
     color: str | None,
     type_image: str | None,
@@ -259,30 +308,32 @@ def images(
     download: bool,
     download_directory: str | None,
     threads: int,
-    max_results: int | None,
     output: str | None,
     proxy: str | None,
     verify: bool,
 ) -> None:
-    """CLI function to perform a images search using DuckDuckGo API."""
+    """CLI function to perform a DDGS images metasearch."""
+    assert (query := keywords or query), "Please provide a query."
     data = DDGS(proxy=_expand_proxy_tb_alias(proxy), verify=verify).images(
-        keywords=keywords,
+        query=query,
         region=region,
         safesearch=safesearch,
         timelimit=timelimit,
+        max_results=max_results,
+        page=page,
+        backend=backend,
         size=size,
         color=color,
         type_image=type_image,
         layout=layout,
         license_image=license_image,
-        max_results=max_results,
     )
-    keywords = _sanitize_keywords(keywords)
+    query = _sanitize_query(query)
     if output:
-        _save_data(keywords, data, function_name="images", filename=output)
+        _save_data(query, data, function_name="images", filename=output)
     if download:
         _download_results(
-            keywords,
+            query,
             data,
             function_name="images",
             proxy=proxy,
@@ -295,74 +346,150 @@ def images(
 
 
 @cli.command()
-@click.option("-k", "--keywords", required=True, help="keywords for query")
-@click.option("-r", "--region", default="wt-wt", help="wt-wt, us-en, ru-ru, etc. -region https://duckduckgo.com/params")
+@click.option("-q", "--query", help="videos search query")
+@click.option("-k", "--keywords", help="(Deprecated) videos search query")  # deprecated
+@click.option("-r", "--region", default="us-en", help="us-en, ru-ru, etc.")
 @click.option("-s", "--safesearch", default="moderate", type=click.Choice(["on", "moderate", "off"]))
 @click.option("-t", "--timelimit", type=click.Choice(["d", "w", "m"]), help="day, week, month")
+@click.option("-m", "--max_results", default=10, type=int, help="maximum number of results")
+@click.option("-p", "--page", default=1, type=int, help="page number of results")
+@click.option(
+    "-b",
+    "--backend",
+    default=["auto"],
+    type=click.Choice(["auto", "all", "duckduckgo"]),
+    multiple=True,
+    callback=_convert_tuple_to_csv,
+)
 @click.option("-res", "--resolution", type=click.Choice(["high", "standart"]))
 @click.option("-d", "--duration", type=click.Choice(["short", "medium", "long"]))
 @click.option("-lic", "--license_videos", type=click.Choice(["creativeCommon", "youtube"]))
-@click.option("-m", "--max_results", type=int, help="maximum number of results")
 @click.option("-o", "--output", help="csv, json or filename.csv|json (save the results to a csv or json file)")
-@click.option("-p", "--proxy", help="the proxy to send requests, example: socks5://127.0.0.1:9150")
+@click.option("-pr", "--proxy", help="the proxy to send requests, example: socks5h://127.0.0.1:9150")
 @click.option("-v", "--verify", default=True, help="verify SSL when making the request")
 def videos(
-    keywords: str,
+    query: str,
+    keywords: str | None,  # deprecated
     region: str,
     safesearch: str,
     timelimit: str | None,
+    max_results: int | None,
+    page: int,
+    backend: str,
     resolution: str | None,
     duration: str | None,
     license_videos: str | None,
-    max_results: int | None,
     output: str | None,
     proxy: str | None,
     verify: bool,
 ) -> None:
-    """CLI function to perform a videos search using DuckDuckGo API."""
+    """CLI function to perform a DDGS videos metasearch."""
+    assert (query := keywords or query), "Please provide a query."
     data = DDGS(proxy=_expand_proxy_tb_alias(proxy), verify=verify).videos(
-        keywords=keywords,
+        query=query,
         region=region,
         safesearch=safesearch,
         timelimit=timelimit,
+        max_results=max_results,
+        page=page,
+        backend=backend,
         resolution=resolution,
         duration=duration,
         license_videos=license_videos,
-        max_results=max_results,
     )
-    keywords = _sanitize_keywords(keywords)
+    query = _sanitize_query(query)
     if output:
-        _save_data(keywords, data, function_name="videos", filename=output)
+        _save_data(query, data, function_name="videos", filename=output)
     else:
         _print_data(data)
 
 
 @cli.command()
-@click.option("-k", "--keywords", required=True, help="keywords for query")
-@click.option("-r", "--region", default="wt-wt", help="wt-wt, us-en, ru-ru, etc. -region https://duckduckgo.com/params")
+@click.option("-q", "--query", help="news search query")
+@click.option("-k", "--keywords", help="(Deprecated) news search query")  # deprecated
+@click.option("-r", "--region", default="us-en", help="us-en, ru-ru, etc.")
 @click.option("-s", "--safesearch", default="moderate", type=click.Choice(["on", "moderate", "off"]))
 @click.option("-t", "--timelimit", type=click.Choice(["d", "w", "m", "y"]), help="day, week, month, year")
-@click.option("-m", "--max_results", type=int, help="maximum number of results")
+@click.option("-m", "--max_results", default=10, type=int, help="maximum number of results")
+@click.option("-p", "--page", default=1, type=int, help="page number of results")
+@click.option(
+    "-b",
+    "--backend",
+    default=["auto"],
+    type=click.Choice(["auto", "all", "duckduckgo", "yahoo"]),
+    multiple=True,
+    callback=_convert_tuple_to_csv,
+)
 @click.option("-o", "--output", help="csv, json or filename.csv|json (save the results to a csv or json file)")
-@click.option("-p", "--proxy", help="the proxy to send requests, example: socks5://127.0.0.1:9150")
+@click.option("-pr", "--proxy", help="the proxy to send requests, example: socks5h://127.0.0.1:9150")
 @click.option("-v", "--verify", default=True, help="verify SSL when making the request")
 def news(
-    keywords: str,
+    query: str,
+    keywords: str | None,  # deprecated
     region: str,
     safesearch: str,
     timelimit: str | None,
     max_results: int | None,
+    page: int,
+    backend: str,
     output: str | None,
     proxy: str | None,
     verify: bool,
 ) -> None:
-    """CLI function to perform a news search using DuckDuckGo API."""
+    """CLI function to perform a DDGS news metasearch."""
+    assert (query := keywords or query), "Please provide a query."
     data = DDGS(proxy=_expand_proxy_tb_alias(proxy), verify=verify).news(
-        keywords=keywords, region=region, safesearch=safesearch, timelimit=timelimit, max_results=max_results
+        query=query,
+        region=region,
+        safesearch=safesearch,
+        timelimit=timelimit,
+        max_results=max_results,
+        page=page,
+        backend=backend,
     )
-    keywords = _sanitize_keywords(keywords)
+    query = _sanitize_query(query)
     if output:
-        _save_data(keywords, data, function_name="news", filename=output)
+        _save_data(query, data, function_name="news", filename=output)
+    else:
+        _print_data(data)
+
+
+@cli.command()
+@click.option("-q", "--query", help="books search query")
+@click.option("-k", "--keywords", help="(Deprecated) books search query")  # deprecated
+@click.option("-m", "--max_results", default=10, type=int, help="maximum number of results")
+@click.option("-p", "--page", default=1, type=int, help="page number of results")
+@click.option(
+    "-b",
+    "--backend",
+    default=["auto"],
+    type=click.Choice(["auto", "all", "annasarchive"]),
+    multiple=True,
+    callback=_convert_tuple_to_csv,
+)
+@click.option("-o", "--output", help="csv, json or filename.csv|json (save the results to a csv or json file)")
+@click.option("-pr", "--proxy", help="the proxy to send requests, example: socks5h://127.0.0.1:9150")
+@click.option("-v", "--verify", default=True, help="verify SSL when making the request")
+def books(
+    query: str,
+    keywords: str | None,  # deprecated
+    max_results: int | None,
+    page: int,
+    backend: str,
+    output: str | None,
+    proxy: str | None,
+    verify: bool,
+) -> None:
+    """CLI function to perform a DDGS books metasearch."""
+    assert (query := keywords or query), "Please provide a query."
+    data = DDGS(proxy=_expand_proxy_tb_alias(proxy), verify=verify).books(
+        query=query,
+        max_results=max_results,
+        page=page,
+        backend=backend,
+    )
+    if output:
+        _save_data(query, data, function_name="books", filename=output)
     else:
         _print_data(data)
 

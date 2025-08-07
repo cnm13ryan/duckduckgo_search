@@ -9,8 +9,8 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from duckduckgo_search import DDGS, __version__
-from duckduckgo_search.cli import _download_results, _save_csv, _save_json, cli
+from ddgs import DDGS, __version__
+from ddgs.cli import _download_results, _save_csv, _save_json, cli
 
 runner = CliRunner()
 TEXT_RESULTS = []
@@ -27,36 +27,41 @@ def test_version_command() -> None:
 
 
 def test_text_command() -> None:
-    result = runner.invoke(cli, ["text", "-k", "python"])
+    result = runner.invoke(cli, ["text", "-q", "zebra"])
     assert "title" in result.output
 
 
 def test_images_command() -> None:
-    result = runner.invoke(cli, ["images", "-k", "cat"])
+    result = runner.invoke(cli, ["images", "-q", "fox"])
     assert "title" in result.output
 
 
 def test_news_command() -> None:
-    result = runner.invoke(cli, ["news", "-k", "usa"])
+    result = runner.invoke(cli, ["news", "-q", "deer"])
     assert "title" in result.output
 
 
 def test_videos_command() -> None:
-    result = runner.invoke(cli, ["videos", "-k", "dog"])
+    result = runner.invoke(cli, ["videos", "-q", "pig"])
+    assert "title" in result.output
+
+
+def test_books_command() -> None:
+    result = runner.invoke(cli, ["books", "-q", "bee"])
     assert "title" in result.output
 
 
 @pytest.mark.dependency()
 def test_get_text() -> None:
     global TEXT_RESULTS
-    TEXT_RESULTS = DDGS().text("test")
+    TEXT_RESULTS = DDGS().text("cow", max_results=5)
     assert TEXT_RESULTS
 
 
 @pytest.mark.dependency()
 def test_get_images() -> None:
     global IMAGES_RESULTS
-    IMAGES_RESULTS = DDGS().images("test")
+    IMAGES_RESULTS = DDGS().images("horse", max_results=5)
     assert IMAGES_RESULTS
 
 
